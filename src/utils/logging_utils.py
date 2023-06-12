@@ -40,7 +40,7 @@ def log_hyperparameters(object_dict: dict) -> None:
     hparams["callbacks"] = cfg.get("callbacks")
     hparams["extras"] = cfg.get("extras")
 
-    hparams["task_name"] = cfg.get("task_name")
+    hparams["experiment_name"] = cfg.get("experiment_name")
     hparams["tags"] = cfg.get("tags")
     hparams["ckpt_path"] = cfg.get("ckpt_path")
     hparams["seed"] = cfg.get("seed")

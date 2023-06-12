@@ -1,4 +1,4 @@
-_target_: src.models.mnist_module.MNISTLitModule
+_target_: src.models.Finetuning
 
 optimizer:
   _target_: torch.optim.Adam
@@ -13,10 +13,13 @@ scheduler:
   factor: 0.1
   patience: 10
 
-net:
-  _target_: src.models.components.simple_dense_net.SimpleDenseNet
+backbone:
+  _target_: src.models.backbones.MLP
   input_size: 784
   lin1_size: 64
   lin2_size: 128
-  lin3_size: 64
-  output_size: 10
+  output_size: 64
+
+head:
+  _target_: src.models.heads.HeadTIL
+  input_size: ${model.backbone.output_size}

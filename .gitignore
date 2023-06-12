@@ -144,6 +144,9 @@ dmypy.json
 *.tar
 *.tar.gz
 
+# OS stuff
+.DS_Store
+
 # Lightning-Hydra-Template
 configs/local/default.yaml
 /data/
@@ -152,3 +155,4 @@ configs/local/default.yaml
 
 # Aim logging
 .aim
+

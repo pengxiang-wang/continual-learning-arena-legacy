@@ -4,15 +4,17 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: mnist.yaml
-  - override /model: mnist.yaml
+  - override /data: permuted_mnist.yaml
+  - override /model: mlp_finetuning.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["mnist", "simple_dense_net"]
+experiment_name: "example"
+
+tags: ["example", "permuted_mnist", "mlp", "finetuning"]
 
 seed: 12345
 
@@ -24,10 +26,10 @@ trainer:
 model:
   optimizer:
     lr: 0.002
-  net:
+  backbone:
     lin1_size: 128
     lin2_size: 256
-    lin3_size: 64
+    output_size: 64
 
 data:
   batch_size: 64
@@ -35,6 +37,6 @@ data:
 logger:
   wandb:
     tags: ${tags}
-    group: "mnist"
+    group: ${experiment_name}
   aim:
-    experiment: "mnist"
+    experiment: ${experiment_name}

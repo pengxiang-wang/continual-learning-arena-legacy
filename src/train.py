@@ -27,14 +27,15 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 
 from src import utils
+from src.callbacks import ContinualCheckpoint, ContinualProgressBar
 
 log = utils.get_pylogger(__name__)
 
 
 @utils.task_wrapper
 def train(cfg: DictConfig) -> Tuple[dict, dict]:
-    """Trains the model. Can additionally evaluate on a testset, using best weights obtained during
-    training.
+    """Trains the continual learning model. Can additionally evaluate on a testset (using best weights obtained during
+    training).
 
     This method is wrapped in optional @task_wrapper decorator, that controls the behavior during
     failure. Useful for multiruns, saving info about the crash, etc.
@@ -56,27 +57,8 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
-    log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
-
     log.info("Instantiating loggers...")
     logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
-
-    log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
-
-    object_dict = {
-        "cfg": cfg,
-        "datamodule": datamodule,
-        "model": model,
-        "callbacks": callbacks,
-        "logger": logger,
-        "trainer": trainer,
-    }
-
-    if logger:
-        log.info("Logging hyperparameters!")
-        utils.log_hyperparameters(object_dict)
 
     if cfg.get("compile"):
         log.info("Compiling model!")
@@ -84,20 +66,58 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     if cfg.get("train"):
         log.info("Starting training!")
-        trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
+        for task_id in range(datamodule.num_tasks):
+            log.info("Instantiating callbacks...")
+            callbacks: List[Callback] = utils.instantiate_callbacks(
+                cfg.get("callbacks")
+            )
+            callbacks.extend([ContinualCheckpoint(), ContinualProgressBar()])
 
-    train_metrics = trainer.callback_metrics
+            log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
+            trainer: Trainer = hydra.utils.instantiate(
+                cfg.trainer, callbacks=callbacks, logger=logger
+            )
 
-    if cfg.get("test"):
-        log.info("Starting testing!")
-        ckpt_path = trainer.checkpoint_callback.best_model_path
-        if ckpt_path == "":
-            log.warning("Best ckpt not found! Using current weights for testing...")
-            ckpt_path = None
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
-        log.info(f"Best ckpt path: {ckpt_path}")
+            object_dict = {
+                "cfg": cfg,
+                "datamodule": datamodule,
+                "model": model,
+                "callbacks": callbacks,
+                "logger": logger,
+                "trainer": trainer,
+            }
 
-    test_metrics = trainer.callback_metrics
+            if logger:
+                log.info("Logging hyperparameters!")
+                utils.log_hyperparameters(object_dict)
+
+            utils.continual_utils.set_task_train(
+                task_id=task_id,
+                datamodule=datamodule,
+                model=model,
+                trainer=trainer,
+                cfg=cfg,
+            )
+
+            log.info(f"Starting training task {task_id}!")
+            trainer.fit(
+                model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path")
+            )
+
+            train_metrics = trainer.callback_metrics
+
+            if cfg.get("test"):
+                log.info(f"Starting testing model after training task {task_id}!")
+                ckpt_path = trainer.checkpoint_callback.best_model_path
+                if ckpt_path == "":
+                    log.warning(
+                        "Best ckpt not found! Using current weights for testing..."
+                    )
+                    ckpt_path = None
+                trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
+                log.info(f"Best ckpt path: {ckpt_path}")
+
+            test_metrics = trainer.callback_metrics
 
     # merge train and test metrics
     metric_dict = {**train_metrics, **test_metrics}

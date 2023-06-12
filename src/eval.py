@@ -25,13 +25,14 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 
 from src import utils
+from src.callbacks import ContinualCheckpoint
 
 log = utils.get_pylogger(__name__)
 
 
 @utils.task_wrapper
 def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
-    """Evaluates given checkpoint on a datamodule testset.
+    """Evaluates given checkpoint of continual learning model on a datamodule testset.
 
     This method is wrapped in optional @task_wrapper decorator, that controls the behavior during
     failure. Useful for multiruns, saving info about the crash, etc.
@@ -54,8 +55,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     log.info("Instantiating loggers...")
     logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
 
+    # trainer for evaluation, no need for other callbacks
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger)
+    trainer: Trainer = hydra.utils.instantiate(
+        cfg.trainer, logger=logger, callbacks=ContinualCheckpoint()
+    )
 
     object_dict = {
         "cfg": cfg,
@@ -68,6 +72,10 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     if logger:
         log.info("Logging hyperparameters!")
         utils.log_hyperparameters(object_dict)
+
+    utils.continual_utils.set_test(
+        model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path
+    )
 
     log.info("Starting testing!")
     trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
