@@ -1,4 +1,6 @@
-_target_: src.models.Finetuning
+_target_: src.models.HAT
+
+s_max: 400.0
 
 optimizer:
   _target_: torch.optim.Adam
@@ -14,7 +16,7 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.MLP
+  _target_: src.models.backbones.MaskedMLP
   input_size: 784
   hidden_size: [256, 256]
   output_size: 64
@@ -22,3 +24,8 @@ backbone:
 head:
   _target_: src.models.heads.HeadTIL
   input_size: ${model.backbone.output_size}
+
+reg:
+  _target_: src.models.regs.MaskSparseReg
+  factor: 0.1
+

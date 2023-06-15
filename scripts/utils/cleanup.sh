@@ -1,3 +1,4 @@
-#!usr/bin/?
+#!/bin/bash
+# Clean up unfinished output logs
+# Run from root folder with: bash scripts/utils/cleanup.sh
 
-# clean up unfinished output logs

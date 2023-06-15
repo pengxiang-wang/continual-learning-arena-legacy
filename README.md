@@ -713,7 +713,7 @@ class YourModel(LightningModule):
 
   def training_step(self, batch: Any, batch_idx: int):
     # the forward process propagates input to loss and predictions of self.task_id
-    loss, preds, targets = ...(batch)
+    loss, preds, targets = ...(batch, self.task_id)
 
     # update and log metrics
     self.train_loss(loss)
@@ -727,12 +727,12 @@ class YourModel(LightningModule):
   def on_val_start(self):
       # by default lightning executes validation step sanity checks before training starts,
       # so it's worth to make sure validation metrics don't store results from these checks
-      self.val_loss.reset()
+      self.val_loss_cls.reset()
       self.val_acc.reset()
       self.val_acc_best.reset()
 
   def validation_step(self, batch: Any, batch_idx: int):
-      loss, preds, targets = self.model_step(batch, self.task_id)
+      loss, preds, targets = ...(batch, self.task_id)
 
       # update and log metrics
       self.val_loss(loss)

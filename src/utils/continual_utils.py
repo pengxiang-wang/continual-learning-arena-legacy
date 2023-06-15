@@ -17,10 +17,6 @@ def set_task_train(
     cfg,
 ) -> None:
     """Set data and model lightning modules to new task."""
-    task_names = datamodule.task_names
-    task_name = task_names[task_id] if task_names else str(task_id)
-
-    datamodule.task_name = task_name
 
     datamodule.task_id = task_id
     model.task_id = task_id
@@ -45,10 +41,10 @@ def set_task_train(
     model.ave_test_acc = MeanMetric()
 
     # for averaging loss across batches
-    model.train_loss = MeanMetric()
-    model.val_loss = MeanMetric()
-    model.test_loss = nn.ModuleList([MeanMetric() for _ in num_classes_total])
-    model.ave_test_loss = MeanMetric()
+    model.train_loss_cls = MeanMetric()
+    model.val_loss_cls = MeanMetric()
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
+    model.ave_test_loss_cls = MeanMetric()
 
     # for tracking best so far validation accuracy
     model.val_acc_best = MaxMetric()
@@ -88,5 +84,5 @@ def set_test(
     model.ave_test_acc = MeanMetric()
 
     # for averaging loss across batches
-    model.test_loss = nn.ModuleList([MeanMetric() for _ in num_classes_total])
-    model.ave_test_loss = MeanMetric()
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
+    model.ave_test_loss_cls = MeanMetric()

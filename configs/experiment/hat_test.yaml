@@ -5,37 +5,21 @@
 
 defaults:
   - override /data: permuted_mnist.yaml
-  - override /model: mlp_finetuning.yaml
+  - override /model: mlp_hat.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "example"
+experiment_name: "hat_test"
 
-tags: ["example", "permuted_mnist", "mlp", "finetuning"]
+tags: ["permuted_mnist", "mlp", "hat"]
 
 seed: 12345
 
 trainer:
-  min_epochs: 10
   max_epochs: 10
-  gradient_clip_val: 0.5
 
-model:
-  optimizer:
-    lr: 0.002
-  backbone:
-    hidden_size: [128, 256]
-    output_size: 64
 
-data:
-  batch_size: 64
 
-logger:
-  wandb:
-    tags: ${tags}
-    group: ${experiment_name}
-  aim:
-    experiment: ${experiment_name}

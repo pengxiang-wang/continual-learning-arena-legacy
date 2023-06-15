@@ -4,12 +4,15 @@ import torch
 
 
 class OneHotIndex:
-    """Permute transform for MNIST image.
+    """Convert class labels to index (start from 0).
+
+    Continual learning datasets might have multiple tasks whose class labels don't always start from 0, or even aren't integers.
+    CrossEntropyLoss can only recognise class indices started from 0 (which is equivalent to one-hot vectors)
 
     Used as a PyTorch Dataset Transform.
 
     Args:
-        seed (int): permutation seed
+        classes: class label list in the order to be converted.
     """
 
     def __init__(self, classes: List[Any]):
@@ -21,7 +24,7 @@ class OneHotIndex:
             target: original label.
 
         Returns:
-            torch.Tensor:
+            torch.Tensor: int label.
         """
         target = self.class_indices[target]
         return target

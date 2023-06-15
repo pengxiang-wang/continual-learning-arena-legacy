@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 import torch
+from torch import nn
 from lightning import LightningModule
 
 
@@ -9,8 +10,8 @@ class Finetuning(LightningModule):
 
     def __init__(
         self,
-        backbone: torch.nn.Module,
         head: torch.nn.Module,
+        backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
     ):
@@ -18,7 +19,7 @@ class Finetuning(LightningModule):
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(ignore=["backbone", "head"], logger=False)
+        self.save_hyperparameters(logger=False)
 
         self.task_id = 0
 
@@ -26,7 +27,7 @@ class Finetuning(LightningModule):
         self.head = head
 
         # loss function
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x: torch.Tensor, task_id: int):
         # the forward process propagates input to logits of classes of task_id
@@ -37,41 +38,49 @@ class Finetuning(LightningModule):
     def model_step(self, batch: Any, task_id: int):
         x, y = batch
         logits = self.forward(x, task_id)
-        loss = self.criterion(logits, y)
+        loss_cls = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        return loss_cls, preds, y
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.model_step(batch, self.task_id)
+        loss_cls, preds, targets = self.model_step(batch, self.task_id)
 
         # update and log metrics
-        self.train_loss(loss)
+        self.train_loss_cls(loss_cls)
         self.train_acc(preds, targets)
         self.log(
-            f"train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True
+            f"train/loss/cls",
+            self.train_loss_cls,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
         self.log(
             f"train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True
         )
 
         # return loss or backpropagation will fail
-        return loss
+        return loss_cls
 
     def on_val_start(self):
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
-        self.val_loss.reset()
+        self.val_loss_cls.reset()
         self.val_acc.reset()
         self.val_acc_best.reset()
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.model_step(batch, self.task_id)
+        loss_cls, preds, targets = self.model_step(batch, self.task_id)
 
         # update and log metrics
-        self.val_loss(loss)
+        self.val_loss_cls(loss_cls)
         self.val_acc(preds, targets)
         self.log(
-            f"val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True
+            f"val/loss/cls",
+            self.val_loss_cls,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
         self.log(f"val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -85,13 +94,13 @@ class Finetuning(LightningModule):
         )
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
-        loss, preds, targets = self.model_step(batch, dataloader_idx)
+        loss_cls, preds, targets = self.model_step(batch, dataloader_idx)
         # update and log metrics
-        self.test_loss[dataloader_idx](loss)
+        self.test_loss_cls[dataloader_idx](loss_cls)
         self.test_acc[dataloader_idx](preds, targets)
         self.log(
-            f"test/loss",
-            self.test_loss[dataloader_idx],
+            f"test/loss/cls",
+            self.test_loss_cls[dataloader_idx],
             add_dataloader_idx=True,
             on_step=False,
             on_epoch=True,
@@ -109,9 +118,9 @@ class Finetuning(LightningModule):
     def on_test_epoch_end(self):
         # test all seen task till self.task_id
         for t in range(self.task_id + 1):
-            self.ave_test_loss(self.test_loss[t].compute())
+            self.ave_test_loss_cls(self.test_loss_cls[t].compute())
             self.ave_test_acc(self.test_acc[t].compute())
-        self.log(f"test/loss/ave", self.ave_test_loss)
+        self.log(f"test/loss/cls/ave", self.ave_test_loss_cls)
         self.log(f"test/acc/ave", self.ave_test_acc)
 
     def configure_optimizers(self):
@@ -123,7 +132,7 @@ class Finetuning(LightningModule):
                 "optimizer": optimizer,
                 "lr_scheduler": {
                     "scheduler": scheduler,
-                    "monitor": "val/loss",
+                    "monitor": "val/loss/cls",
                     "interval": "epoch",
                     "frequency": 1,
                 },

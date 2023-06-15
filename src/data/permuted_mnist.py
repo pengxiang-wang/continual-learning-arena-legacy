@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -13,20 +12,15 @@ from src.data import transforms as my_transforms
 class PermutedMNIST(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
 
-    TIL (Task-Incremental Learning) Setting. Must use HeadTIL for your model.
-
-    Args:
-
-
+    TIL (Task-Incremental Learning) scenario. Must use HeadTIL for your model.
     """
 
     def __init__(
         self,
         data_dir: str = "data/",
         num_tasks: int = 10,
-        task_names: Optional[List[str]] = None,
         train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
-        perm_seeds: List[int] = range(10),
+        perm_seeds: List[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -38,7 +32,6 @@ class PermutedMNIST(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         self.task_id = None
-        self.task_names = task_names
 
         # data transformations
         self.transforms = transforms.Compose(
@@ -77,12 +70,14 @@ class PermutedMNIST(LightningDataModule):
             train=True,
             transform=transforms.Compose([self.transforms, permutation]),
             target_transform=one_hot_index,
+            download=False,
         )
         testset = MNIST(
             self.hparams.data_dir,
             train=False,
             transform=transforms.Compose([self.transforms, permutation]),
             target_transform=one_hot_index,
+            download=False,
         )
         dataset = ConcatDataset(datasets=[trainset, testset])
         data_train, data_val, data_test = random_split(

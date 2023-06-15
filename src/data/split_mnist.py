@@ -10,21 +10,20 @@ from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
 
+# Unfinished
+
 
 class SplitMNIST(LightningDataModule):
-    """LightningDataModule for Split MNIST dataset."""
+    """LightningDataModule for Split MNIST dataset.
+
+    CIL (Class-Incremental) scenario or TIL (Task-Incremental) scenario. You can use HeadTIL or HeadCIL for your model.
+    """
 
     def __init__(
         self,
         data_dir: str = "data/",
         class_split: List[List[Any]] = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]],
-        task_names: Optional[List[str]] = None,
-        train_val_test_split_pc_each_task: Tuple[float, float, float] = (
-            55_000 / 60_000,
-            5_000 / 60_000,
-            10_000 / 60_000,
-        ),
-        perm_seeds: List[int] = range(10),
+        train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -34,8 +33,6 @@ class SplitMNIST(LightningDataModule):
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
-
-        self.task_names = task_names
 
         # data transformations
         self.transforms = transforms.Compose(
@@ -62,19 +59,26 @@ class SplitMNIST(LightningDataModule):
         MNIST(self.hparams.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
-        """Load data of self.task_id. Set variables: `self.data_train`, `self.data_val`, `self.data_test`."""
-        # data transformations
-        perm_seed = self.hparams.perm_seeds[self.task_id]
-        transforms_with_perm = transforms.Compose(
-            [self.transforms, my_transforms.Permute(perm_seed=perm_seed)]
-        )
-        target_transform = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
+        """Load data of self.task_id.
+
+        Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
+        """
+        # target transformations
+        one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         trainset = MNIST(
-            self.hparams.data_dir, train=True, transform=transforms_with_perm
+            self.hparams.data_dir,
+            train=True,
+            transform=self.transforms,
+            target_transform=one_hot_index,
+            download=False,
         )
         testset = MNIST(
-            self.hparams.data_dir, train=False, transform=transforms_with_perm
+            self.hparams.data_dir,
+            train=False,
+            transform=self.transforms,
+            target_transform=one_hot_index,
+            download=False,
         )
         dataset = ConcatDataset(datasets=[trainset, testset])
 
@@ -82,12 +86,16 @@ class SplitMNIST(LightningDataModule):
         train_val_test_split_each_task = [
             int(pc * len(subset)) for pc in self.hparams.train_val_test_split_each_task
         ]
-        self.data_train, self.data_val, data_test = random_split(
+        data_train, data_val, data_test = random_split(
             dataset=subset,
             lengths=train_val_test_split_each_task,
             generator=torch.Generator().manual_seed(42),
         )
-        self.data_test[self.task_name] = data_test
+        if stage == "fit":
+            self.data_train = data_train
+            self.data_val = data_val
+        elif stage == "test":
+            self.data_test[self.task_id] = data_test
 
     def _get_class_subset(
         self, dataset: Dataset, classes: list[int]
@@ -154,18 +162,6 @@ class SplitMNIST(LightningDataModule):
             for data_test in self.data_test
         ]
 
-    def teardown(self, stage: Optional[str] = None):
-        """Clean up after fit or test."""
-        pass
-
-    def state_dict(self):
-        """Extra things to save to checkpoint."""
-        return {}
-
-    def load_state_dict(self, state_dict: Dict[str, Any]):
-        """Things to do when loading checkpoint."""
-        pass
-
 
 if __name__ == "__main__":
-    _ = MNISTDataModule()
+    _ = SplitMNIST()
