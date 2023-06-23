@@ -25,9 +25,10 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 
 from src import utils
+from src.utils import pylogger
 from src.callbacks import ContinualCheckpoint
 
-log = utils.get_pylogger(__name__)
+log = pylogger.get_pylogger(__name__)
 
 
 @utils.task_wrapper

@@ -1,6 +1,10 @@
-_target_: src.models.HAT
+_target_: src.models.HATCompareLoss
 
 s_max: 400.0
+reg:
+  _target_: src.models.regs.MaskSparseMultiReg
+  factor: 0.1
+
 
 optimizer:
   _target_: torch.optim.Adam
@@ -18,14 +22,9 @@ scheduler:
 backbone:
   _target_: src.models.backbones.MaskedMLP
   input_size: 784
-  hidden_size: [256, 256]
+  hidden_size: [256, 100]
   output_size: 64
 
 head:
   _target_: src.models.heads.HeadTIL
   input_size: ${model.backbone.output_size}
-
-reg:
-  _target_: src.models.regs.MaskSparseReg
-  factor: 0.1
-

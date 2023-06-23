@@ -1,0 +1,30 @@
+_target_: src.models.AdaHAT
+
+s_max: 400.0
+reg:
+  _target_: src.models.regs.MaskSparseReg
+  factor: 0.1
+
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+backbone:
+  _target_: src.models.backbones.MaskedMLP
+  input_size: 784
+  hidden_size: [256, 100]
+  output_size: 64
+
+head:
+  _target_: src.models.heads.HeadTIL
+  input_size: ${model.backbone.output_size}

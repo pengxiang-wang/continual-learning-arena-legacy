@@ -4,8 +4,8 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: permuted_mnist.yaml
-  - override /model: mlp_finetuning.yaml
+  - override /data: til_permuted_mnist.yaml
+  - override /model: til_mlp_finetuning.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 
@@ -14,7 +14,7 @@ defaults:
 
 experiment_name: "example"
 
-tags: ["example", "permuted_mnist", "mlp", "finetuning"]
+tags: ["example", "TIL", "Permuted MNIST", "MLP", "Finetuning"]
 
 seed: 12345
 

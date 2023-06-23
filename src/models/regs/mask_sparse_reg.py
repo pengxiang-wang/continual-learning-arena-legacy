@@ -29,4 +29,4 @@ class MaskSparseReg(nn.Module):
             count_total += count_l
         reg_total = reg_total / count_total
         # print(reg_total)
-        return self.factor * reg_total, reg
+        return self.factor * reg_total, reg_total, reg

@@ -1,61 +1,116 @@
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
-from lightning import LightningModule, LightningDataModule
+from lightning import LightningModule, LightningDataModule, Trainer
 import lightning.pytorch as pl
+import pyrootutils
 import torch
 from torch import nn
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
+
+pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
 def set_task_train(
     task_id: int,
     datamodule: LightningDataModule,
     model: LightningModule,
-    trainer,
-    cfg,
+    trainer: Trainer,
 ) -> None:
     """Set data and model lightning modules to new task."""
 
+    # maintain task_id counter
     datamodule.task_id = task_id
     model.task_id = task_id
+    trainer.task_id = task_id
 
+    # add new head
     classes = datamodule.classes(task_id)
     model.head.new_task(classes)
 
     num_classes = len(classes)
     num_classes_total = [len(datamodule.classes(t)) for t in range(task_id + 1)]
 
-    # set metrics
-
-    # metric objects for calculating and averaging accuracy across batches and tasks
-    model.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
-    model.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
+    # setup metrics
+    # train metrics (single task)
+    exec(f"model.task{task_id}_train_loss_cls = MeanMetric()")
+    exec(f"model.task{task_id}_train_loss_reg = MeanMetric()")
+    exec(f"model.task{task_id}_train_loss_total = MeanMetric()")
+    exec(
+        f"model.task{task_id}_train_acc = Accuracy(task='multiclass', num_classes=num_classes)"
+    )
+    train_metrics = {}  # name dict
+    train_metrics[f"task{task_id}/train/loss/cls"] = eval(
+        f"model.task{task_id}_train_loss_cls"
+    )
+    train_metrics[f"task{task_id}/train/loss/reg"] = eval(
+        f"model.task{task_id}_train_loss_reg"
+    )
+    train_metrics[f"task{task_id}/train/loss/total"] = eval(
+        f"model.task{task_id}_train_loss_total"
+    )
+    train_metrics[f"task{task_id}/train/acc"] = eval(f"model.task{task_id}_train_acc")
+    model.train_metrics = train_metrics
+    # val metrics (single task)
+    exec(f"model.task{task_id}_val_loss_cls = MeanMetric()")
+    exec(f"model.task{task_id}_val_loss_reg = MeanMetric()")
+    exec(f"model.task{task_id}_val_loss_total = MeanMetric()")
+    exec(
+        f"model.task{task_id}_val_acc = Accuracy(task='multiclass', num_classes=num_classes)"
+    )
+    exec(
+        f"model.task{task_id}_val_acc_best = MaxMetric()"
+    )  # for tracking best so far validation accuracy
+    val_metrics = {}  # name dict
+    val_metrics[f"task{task_id}/val/loss/cls"] = eval(
+        f"model.task{task_id}_val_loss_cls"
+    )
+    val_metrics[f"task{task_id}/val/loss/reg"] = eval(
+        f"model.task{task_id}_val_loss_reg"
+    )
+    val_metrics[f"task{task_id}/val/loss/total"] = eval(
+        f"model.task{task_id}_val_loss_total"
+    )
+    val_metrics[f"task{task_id}/val/acc"] = eval(f"model.task{task_id}_val_acc")
+    val_metrics[f"task{task_id}/val/acc/best"] = eval(
+        f"model.task{task_id}_val_acc_best"
+    )
+    model.val_metrics = val_metrics
+    # test metrics (single task)
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
     model.test_acc = nn.ModuleList(
         [
             Accuracy(task="multiclass", num_classes=num_classes)
             for num_classes in num_classes_total
         ]
     )
-    model.ave_test_acc = MeanMetric()
+    test_metrics = {}
+    test_metrics[f"test/loss/cls"] = model.test_loss_cls
+    test_metrics[f"test/acc"] = model.test_acc
+    model.test_metrics = test_metrics
+    # test metrics (overall across task)
+    model.test_loss_cls_ave = MeanMetric()
+    model.test_acc_ave = MeanMetric()
+    # model.test_bwt = None # not implemented, have to inherit from last
+    test_metrics_overall = {}
+    test_metrics_overall[f"test/loss/cls/ave"] = model.test_loss_cls_ave
+    test_metrics_overall[f"test/acc/ave"] = model.test_acc_ave
+    # test_metrics_overall[f"test/bwt"] = model.test_bwt
+    model.test_metrics_overall = test_metrics_overall
 
-    # for averaging loss across batches
-    model.train_loss_cls = MeanMetric()
-    model.val_loss_cls = MeanMetric()
-    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
-    model.ave_test_loss_cls = MeanMetric()
-
-    # for tracking best so far validation accuracy
-    model.val_acc_best = MaxMetric()
-
+    # setup callbacks
     if trainer.checkpoint_callback:
         trainer.checkpoint_callback.dirpath = os.path.join(
-            cfg.paths.get("output_dir"), f"task{task_id}"
+            trainer.checkpoint_callback.dirpath, f"task{task_id}"
+        )  # seperate task output directory
+        trainer.checkpoint_callback.monitor = (
+            f"task{task_id}/{trainer.checkpoint_callback.monitor}"
         )
-
     if trainer.early_stopping_callback:
-        pass
+        trainer.early_stopping_callback.monitor = (
+            f"task{task_id}/{trainer.early_stopping_callback.monitor}"
+        )
 
 
 def set_test(
@@ -63,6 +118,8 @@ def set_test(
     model: LightningModule,
     ckpt_path,
 ):
+    """Set data and model lightning modules to test task."""
+
     num_tasks_ckpt = torch.load(ckpt_path)["task_id"] + 1
 
     # quick setup of datamodule and heads
@@ -74,15 +131,25 @@ def set_test(
 
     num_classes_total = [len(datamodule.classes(t)) for t in range(num_tasks_ckpt)]
 
-    # metric objects for calculating and averaging accuracy across batches and tasks
+    # setup metrics
+    # test metrics (across task)
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
     model.test_acc = nn.ModuleList(
         [
             Accuracy(task="multiclass", num_classes=num_classes)
             for num_classes in num_classes_total
         ]
     )
+    model.ave_test_loss_cls = MeanMetric()
     model.ave_test_acc = MeanMetric()
 
-    # for averaging loss across batches
-    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
-    model.ave_test_loss_cls = MeanMetric()
+
+def distribute_task_train_val_test_split(
+    train_val_test_split: Tuple[int, int, int], num_data: int, num_data_task: int
+):
+    pc = num_data_task / num_data
+    print()
+    train_val_test_split_task = [int(pc * num) for num in train_val_test_split]
+    train_val_test_split_task[0] = num_data_task - sum(train_val_test_split_task[1:])
+    train_val_test_split_task = tuple(train_val_test_split_task)
+    return train_val_test_split_task

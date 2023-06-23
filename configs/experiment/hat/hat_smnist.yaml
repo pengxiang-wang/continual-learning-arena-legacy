@@ -1,0 +1,29 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: til_split_mnist.yaml
+  - override /model: til_mlp_hat.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: default.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+experiment_name: "hat_smnist"
+
+tags: ["example", "TIL", "Split MNIST", "MLP", "HAT"]
+
+seed: 12345
+
+model:
+  backbone:
+    input_size: 784
+    
+trainer:
+  max_epochs: 10
+
+
+

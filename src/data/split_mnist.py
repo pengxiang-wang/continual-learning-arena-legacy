@@ -1,16 +1,24 @@
-import copy
-from indexed import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
+from src.utils import pylogger, loggerpack
 
-# Unfinished
+log = pylogger.get_pylogger(__name__)
+loggerpack = loggerpack.get_loggerpack()
+
+NUM_CLASSES = 10
+INPUT_SIZE = (1,28,28)
+INPUT_LEN = 1*28*28
+MEAN = (0.1307, )
+STD = (0.3081, )
+
+DEFAULT_CLASS_SPLIT = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
 
 
 class SplitMNIST(LightningDataModule):
@@ -22,8 +30,9 @@ class SplitMNIST(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/",
-        class_split: List[List[Any]] = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]],
-        train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
+        scenario: str = "CIL",
+        class_split: List[List[Any]] = DEFAULT_CLASS_SPLIT,
+        val_pc: float = 0.1,
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -34,72 +43,86 @@ class SplitMNIST(LightningDataModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
 
-        # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        )
+        # meta info
+        self.data_dir = data_dir
+        self.scenario = scenario
+        self.class_split = class_split
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
-        self.data_test: OrderedDict[str, Optional[Dataset]] = OrderedDict()
+        self.data_test: Dict[int, Optional[Dataset]] = {}
+
+        # self maintained task_id counter
+        self.task_id: Optional[int] = None
+
+        # data transformations
+        self.transforms = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
+        )
 
     @property
-    def num_tasks(self):
+    def num_tasks(self) -> int:
         return len(self.class_split)
 
-    def classes(self, task_id):
-        classes = []
-        for t in range(task_id):
-            classes.extend(self.class_split[t])
+    def classes(self, task_id: int) -> List[Any]:
+        """Return class labels of task_id."""
+
+        if self.scenario == "CIL":
+            classes = []
+            for t in range(task_id + 1):
+                classes.extend(
+                    self.class_split[t]
+                )  # classes grows incrementally for CIL scenario
+        elif self.scenario == "TIL":
+            classes = self.class_split[task_id]
         return classes
 
     def prepare_data(self):
         """Download data if needed."""
-        MNIST(self.hparams.data_dir, train=True, download=True)
-        MNIST(self.hparams.data_dir, train=False, download=True)
+        MNIST(self.data_dir, train=True, download=True)
+        MNIST(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
 
-        Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
+        Set variables here: self.data_train, self.data_val, self.data_test
         """
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
-        trainset = MNIST(
-            self.hparams.data_dir,
-            train=True,
-            transform=self.transforms,
-            target_transform=one_hot_index,
-            download=False,
-        )
-        testset = MNIST(
-            self.hparams.data_dir,
-            train=False,
-            transform=self.transforms,
-            target_transform=one_hot_index,
-            download=False,
-        )
-        dataset = ConcatDataset(datasets=[trainset, testset])
-
-        subset = self._get_class_subset(dataset, self.class_split[self.task_id])
-        train_val_test_split_each_task = [
-            int(pc * len(subset)) for pc in self.hparams.train_val_test_split_each_task
-        ]
-        data_train, data_val, data_test = random_split(
-            dataset=subset,
-            lengths=train_val_test_split_each_task,
-            generator=torch.Generator().manual_seed(42),
-        )
         if stage == "fit":
-            self.data_train = data_train
-            self.data_val = data_val
+            data_train_full_before_split = MNIST(
+                root=self.data_dir,
+                train=True,
+                transform=transforms.Compose([self.transforms]),
+                target_transform=one_hot_index,
+                download=False,
+            )
+            data_train_before_split = self._get_class_subset(
+                data_train_full_before_split, classes=self.class_split[self.task_id]
+            )
+            self.data_train, self.data_val = random_split(
+                data_train_before_split,
+                lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
+                generator=torch.Generator().manual_seed(42),
+            )
         elif stage == "test":
-            self.data_test[self.task_id] = data_test
+            data_test = MNIST(
+                self.data_dir,
+                train=False,
+                transform=transforms.Compose([self.transforms]),
+                target_transform=one_hot_index,
+                download=False,
+            )
+            self.data_test[self.task_id] = self._get_class_subset(
+                data_test, classes=self.class_split[self.task_id]
+            )
 
     def _get_class_subset(
-        self, dataset: Dataset, classes: list[int]
-    ) -> torch.nn.Dataset:
+        self,
+        dataset: MNIST,
+        classes: list[int],
+    ) -> Dataset:
         """Get subset of dataset in certain classes, as an implementation for spliting dataset.
 
         Args:
@@ -110,17 +133,12 @@ class SplitMNIST(LightningDataModule):
             nn.Dataset: subset of original dataset in classes.
         """
         # Get from dataset.data and dataset.targets
-        subset = copy.deepcopy(dataset)
-        subset.data = []
-        subset.targets = []
-        for x, y in dataset:
-            if y.item() in classes:
-                subset.data.append(x)
-                subset.targets.append(y)
-        # Reconstruct subset.data, subset.targets
-        subset.data = torch.cat(subset.data)
-        subset.targets = torch.cat(subset.targets)
-        return subset
+        idx = dataset.targets == classes[0]
+        for cls in classes[1:]:
+            idx = (dataset.targets == cls) | idx
+        dataset.data = dataset.data[idx]
+        dataset.targets = dataset.targets[idx]
+        return dataset
 
     def train_dataloader(self):
         return DataLoader(
@@ -129,6 +147,7 @@ class SplitMNIST(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
+            drop_last=True,
         )
 
     def val_dataloader(self):
@@ -138,29 +157,20 @@ class SplitMNIST(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=False,
+            drop_last=True,
         )
 
     def test_dataloader(self):
-        return DataLoader(
-            dataset=self.data_test[self.task_id_test],
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            shuffle=False,
-        )
-
-    def test_dataloader(self):
-        """Test dataloader of other task."""
-        return [
-            DataLoader(
+        return {
+            task_id: DataLoader(
                 dataset=data_test,
                 batch_size=self.hparams.batch_size,
                 num_workers=self.hparams.num_workers,
                 pin_memory=self.hparams.pin_memory,
                 shuffle=False,
             )
-            for data_test in self.data_test
-        ]
+            for task_id, data_test in self.data_test.items()
+        }
 
 
 if __name__ == "__main__":

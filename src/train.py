@@ -5,7 +5,7 @@ import lightning as L
 import pyrootutils
 import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
-from lightning.pytorch.loggers import Logger
+from lightning.pytorch.loggers import Logger as LightningLogger
 from omegaconf import DictConfig
 
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
@@ -28,7 +28,9 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src import utils
 from src.callbacks import ContinualCheckpoint, ContinualProgressBar
+from src.utils import pylogger, LoggerPack
 
+# prepare loggers
 log = utils.get_pylogger(__name__)
 
 
@@ -47,18 +49,27 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
+    # prepare loggers
+    lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(
+        cfg.get("logger")
+    )
+
+    loggerpack: LoggerPack = LoggerPack(
+        loggers=lightning_loggers, log_dir=cfg.paths.output_dir
+    )
+    utils.globalise_loggerpack(loggerpack)
+
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
     log.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
+    datamodule.loggerpack = loggerpack
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
-
-    log.info("Instantiating loggers...")
-    logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
+    datamodule.log = loggerpack
 
     if cfg.get("compile"):
         log.info("Compiling model!")
@@ -75,7 +86,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
             log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
             trainer: Trainer = hydra.utils.instantiate(
-                cfg.trainer, callbacks=callbacks, logger=logger
+                cfg.trainer, callbacks=callbacks, logger=lightning_loggers
             )
 
             object_dict = {
@@ -83,20 +94,19 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
                 "datamodule": datamodule,
                 "model": model,
                 "callbacks": callbacks,
-                "logger": logger,
+                "logger": lightning_loggers,
                 "trainer": trainer,
             }
 
-            if logger:
+            if lightning_loggers:
                 log.info("Logging hyperparameters!")
-                utils.log_hyperparameters(object_dict)
+                loggerpack.log_hyperparameters(object_dict=object_dict)
 
             utils.continual_utils.set_task_train(
                 task_id=task_id,
                 datamodule=datamodule,
                 model=model,
                 trainer=trainer,
-                cfg=cfg,
             )
 
             log.info(f"Starting training task {task_id}!")

@@ -1,13 +1,24 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
-from torchvision.datasets import MNIST
+from torch.utils.data import DataLoader, Dataset, random_split
+from torchvision.datasets import MNIST as OrigDataset
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
+from src.utils import pylogger, loggerpack
 
+log = pylogger.get_pylogger(__name__)
+loggerpack = loggerpack.get_loggerpack()
+
+NUM_CLASSES = 10
+INPUT_SIZE = (1,28,28)
+INPUT_LEN = 1*28*28
+MEAN = (0.1307, )
+STD = (0.3081, )
+
+DEFAULT_PERM_SEEDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 class PermutedMNIST(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
@@ -18,9 +29,10 @@ class PermutedMNIST(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/",
+        scenario: str = "TIL",
         num_tasks: int = 10,
-        train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
-        perm_seeds: List[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        perm_seeds: List[int] = DEFAULT_PERM_SEEDS,
+        val_pc: float = 0.1,
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -31,65 +43,67 @@ class PermutedMNIST(LightningDataModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
 
-        self.task_id = None
-
-        # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        )
+        # meta info
+        self.data_dir = data_dir
+        self.scenario = scenario
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Dict[int, Optional[Dataset]] = {}
+
+        # self maintained task_id counter
+        self.task_id: Optional[int] = None
+
+        # data transformations
+        self.transforms = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
+        )
 
     @property
     def num_tasks(self) -> int:
         return self.hparams.num_tasks
 
     def classes(self, task_id: int) -> List[Any]:
-        return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        """Return class labels of task_id."""
+        return [i for i in range(NUM_CLASSES)]
 
     def prepare_data(self):
         """Download data if needed."""
-        MNIST(self.hparams.data_dir, train=True, download=True)
-        MNIST(self.hparams.data_dir, train=False, download=True)
+        OrigDataset(self.data_dir, train=True, download=True)
+        OrigDataset(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
 
-        Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
+        Set variables here: self.data_train, self.data_val, self.data_test
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation = my_transforms.Permute(num_pixels=784, seed=perm_seed)
+        permutation = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
-        trainset = MNIST(
-            root=self.hparams.data_dir,
-            train=True,
-            transform=transforms.Compose([self.transforms, permutation]),
-            target_transform=one_hot_index,
-            download=False,
-        )
-        testset = MNIST(
-            self.hparams.data_dir,
-            train=False,
-            transform=transforms.Compose([self.transforms, permutation]),
-            target_transform=one_hot_index,
-            download=False,
-        )
-        dataset = ConcatDataset(datasets=[trainset, testset])
-        data_train, data_val, data_test = random_split(
-            dataset=dataset,
-            lengths=self.hparams.train_val_test_split,
-            generator=torch.Generator().manual_seed(42),
-        )
         if stage == "fit":
-            self.data_train = data_train
-            self.data_val = data_val
+            data_train_before_split = OrigDataset(
+                root=self.data_dir,
+                train=True,
+                transform=transforms.Compose([self.transforms, permutation]),
+                target_transform=one_hot_index,
+                download=False,
+            )
+            self.data_train, self.data_val = random_split(
+                data_train_before_split,
+                lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
+                generator=torch.Generator().manual_seed(42),
+            )
         elif stage == "test":
-            self.data_test[self.task_id] = data_test
+            self.data_test[self.task_id] = OrigDataset(
+                self.data_dir,
+                train=False,
+                transform=transforms.Compose([self.transforms, permutation]),
+                target_transform=one_hot_index,
+                download=False,
+            )
 
     def train_dataloader(self):
         return DataLoader(
@@ -98,6 +112,7 @@ class PermutedMNIST(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
+            drop_last=True,
         )
 
     def val_dataloader(self):
@@ -107,6 +122,7 @@ class PermutedMNIST(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=False,
+            drop_last=True,
         )
 
     def test_dataloader(self):

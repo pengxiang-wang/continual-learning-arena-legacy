@@ -1,5 +1,7 @@
 from copy import deepcopy
+
 import torch
+from torch import nn
 
 
 class MaskMemory:
@@ -10,19 +12,28 @@ class MaskMemory:
         backbone (nn.Module): only use its mask shape to create new mask
     """
 
-    def __init__(self, s_max: float, backbone):
+    def __init__(self, s_max: float, backbone: nn.Module, approach: str):
         self.s_max = s_max
         self.backbone = backbone
 
+        self.approach = approach
+
         # stores
         self.masks = {}
+        self.masks[0] = self.empty_mask(backbone)  # init for mask sparse multi reg
 
-        # stores joint mask of all self.masks cumulatively.
-        self.cumulative_mask = self.empty_mask(backbone)
+        # stores cumulated mask of all self.masks.
+        self.union_mask = self.empty_mask(backbone)
+        if self.approach == "adahat":
+            self.sum_mask = self.empty_mask(backbone)
 
     def get_mask(self, task_id: int):
         """Get mask of task_id."""
         return self.masks[task_id]
+
+    def get_masks(self):
+        """Get all masks."""
+        return self.masks
 
     def empty_mask(self, backbone):
         """Create empty mask (all zeros) with mask size of backbone."""
@@ -32,43 +43,45 @@ class MaskMemory:
 
         return mask
 
-    def get_cumulative_mask(self):
-        return self.cumulative_mask
+    def get_union_mask(self):
+        return self.union_mask
 
-    def join_masks(self, mask1, mask2):
+    def get_sum_mask(self):
+        return self.sum_mask
+
+    def combine_masks(self, mask1, mask2, operator="unite"):
         """Join two masks by element-wise maximum."""
-        joint_mask = {}
+        mask = {}
         for module_name in mask1.keys():
-            joint_mask[module_name] = torch.max(mask1[module_name], mask2[module_name])
+            if operator == "union":
+                mask[module_name] = torch.max(mask1[module_name], mask2[module_name])
+            elif operator == "sum":
+                mask[module_name] = mask1[module_name] + mask2[module_name]
+        return mask
 
-        return joint_mask
+    def update_union_mask(self, mask):
+        """Update cumulated union mask."""
+        union_mask = deepcopy(self.union_mask)
+        self.union_mask = self.combine_masks(union_mask, mask, operator="union")
 
-    def cumulate_mask(self, mask):
-        """Update cumulative mask."""
-        # print(self.cumulative_mask)
-        # print(mask)
-        cumulative_mask = deepcopy(self.cumulative_mask)
-        self.cumulative_mask = self.join_masks(cumulative_mask, mask)
-
-        # print(self.cumulative_mask)
+    def update_sum_mask(self, mask):
+        """Update cumulated sum mask."""
+        sum_mask = deepcopy(self.sum_mask)
+        self.sum_mask = self.combine_masks(sum_mask, mask, operator="sum")
 
     def te2mask(self, te, backbone):
         mask = {}
         for module_name, embedding in te.items():
             mask[module_name] = backbone.mask(embedding, self.s_max).detach()
-
-        # print(mask["fc1"])
         return mask
 
     def update(self, task_id: int, backbone: torch.nn.Module):
-        """Store mask of self.task_id after training it, and update cumulative mask."""
-        # print(backbone.te['fc1'].weight)
+        """Store mask of self.task_id after training it, and update union mask."""
         mask = self.te2mask(backbone.te, backbone)
         self.masks[task_id] = mask
-
-        self.cumulate_mask(mask)
-
-        # print(self.masks)
+        self.update_union_mask(mask)
+        if self.approach == "adahat":
+            self.update_sum_mask(mask)
 
 
 if __name__ == "__main__":
@@ -79,8 +92,8 @@ if __name__ == "__main__":
     # backbone = MaskedMLP(input_size=784, hidden_size=[256,256], output_size=64)
     # mask_memory = MaskMemory(s_max=10, backbone=backbone)
     # print(backbone.te["fc1"].weight)
-    # print(mask_memory.get_cumulative_mask())
+    # print(mask_memory.get_union_mask())
     # mask_memory.update(task_id=0, backbone=backbone)
-    # print(mask_memory.get_cumulative_mask())
+    # print(mask_memory.get_union_mask())
     # print(mask_memory.get_mask(0))
     mask = {"fc1": torch.tensor([])}

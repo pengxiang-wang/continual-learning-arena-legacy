@@ -47,7 +47,7 @@ class MaskedMLP(nn.Module):
         self.test_mask = mask
         # print(self.test_mask["fc1"])
 
-    def forward(self, x, scalar: float, stage: str):
+    def forward(self, x, scalar: float, stage: str, additional_mask=None):
         batch_size, channels, width, height = x.size()
 
         # (batch, 1, width, height) -> (batch, 1*width*height)
@@ -60,8 +60,11 @@ class MaskedMLP(nn.Module):
                 self.mask(self.te[f"fc{l}"], scalar)
                 if stage == "fit"
                 else self.test_mask[f"fc{l}"]
-            )  # is that reliable? Or I should explicitly pass a stage flag?
+            )
             h = m * h  # apply mask
+            if additional_mask:
+                m_add = additional_mask[f"fc{l}"]
+                h = m_add * h  # apply additional mask
             # h = self.bn[l](h) # problem!
             a = self.activation[l](h)
 

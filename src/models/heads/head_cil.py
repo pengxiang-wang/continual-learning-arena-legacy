@@ -22,7 +22,7 @@ class HeadCIL(nn.Module):
         self.output_size = len(classes)
 
     def forward(self, feature, task_id=None):
-        logits = torch.cat([head(feature) for head in self.heads.values()])
+        logits = torch.cat([head(feature) for head in self.heads], dim=-1)
         return logits
 
 

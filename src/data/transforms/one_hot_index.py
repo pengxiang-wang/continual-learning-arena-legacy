@@ -26,7 +26,9 @@ class OneHotIndex:
         Returns:
             torch.Tensor: int label.
         """
-        target = self.class_indices[target]
+        if target in self.class_indices.keys():
+            target = self.class_indices[target]
+        target = torch.tensor(target)
         return target
 
 

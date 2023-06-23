@@ -30,14 +30,14 @@ def instantiate_callbacks(callbacks_cfg: DictConfig) -> List[Callback]:
     return callbacks
 
 
-def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
+def instantiate_lightning_loggers(logger_cfg: DictConfig) -> List[Logger]:
     """Instantiates loggers from config."""
 
-    logger: List[Logger] = []
+    loggers: List[Logger] = []
 
     if not logger_cfg:
         log.warning("No logger configs found! Skipping...")
-        return logger
+        return loggers
 
     if not isinstance(logger_cfg, DictConfig):
         raise TypeError("Logger config must be a DictConfig!")
@@ -45,6 +45,6 @@ def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
     for _, lg_conf in logger_cfg.items():
         if isinstance(lg_conf, DictConfig) and "_target_" in lg_conf:
             log.info(f"Instantiating logger <{lg_conf._target_}>")
-            logger.append(hydra.utils.instantiate(lg_conf))
+            loggers.append(hydra.utils.instantiate(lg_conf))
 
-    return logger
+    return loggers

@@ -1,0 +1,22 @@
+_target_: src.models.Finetuning
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+backbone:
+  _target_: src.models.backbones.ResNet152
+  input_channels: 3
+
+head:
+  _target_: src.models.heads.HeadTIL
+  input_size: 2048
