@@ -13,12 +13,14 @@ log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_loggerpack()
 
 NUM_CLASSES = 10
-INPUT_SIZE = (1,28,28)
-INPUT_LEN = 1*28*28
-MEAN = (0.1307, )
-STD = (0.3081, )
+INPUT_SIZE = (1, 28, 28)
+INPUT_LEN = 1 * 28 * 28
+MEAN = (0.1307,)
+STD = (0.3081,)
 
-DEFAULT_PERM_SEEDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+DEFAULT_NUM_TASKS = 10
+DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
+
 
 class PermutedMNIST(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
@@ -30,7 +32,7 @@ class PermutedMNIST(LightningDataModule):
         self,
         data_dir: str = "data/",
         scenario: str = "TIL",
-        num_tasks: int = 10,
+        num_tasks: int = DEFAULT_NUM_TASKS,
         perm_seeds: List[int] = DEFAULT_PERM_SEEDS,
         val_pc: float = 0.1,
         batch_size: int = 64,

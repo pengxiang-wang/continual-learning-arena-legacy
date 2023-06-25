@@ -14,9 +14,9 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.ResNet152
+  _target_: src.models.backbones.ResNet18
   input_channels: 3
 
 head:
   _target_: src.models.heads.HeadTIL
-  input_size: 2048
+  input_size: 512

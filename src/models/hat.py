@@ -17,6 +17,9 @@ log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_loggerpack()
 
 
+DEFAULT_SMAX = 400.0
+
+
 class HAT(Finetuning):
     """LightningModule for HAT (Hard Attention to Task) continual learning algorithm."""
 
@@ -26,8 +29,9 @@ class HAT(Finetuning):
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
-        s_max: float,
         reg: torch.nn.Module,
+        s_max: float = DEFAULT_SMAX,
+        log_train_mask=False,
     ):
         super().__init__(head, backbone, optimizer, scheduler)
 
@@ -41,6 +45,8 @@ class HAT(Finetuning):
 
         # manual optimization
         self.automatic_optimization = False
+
+        self.log_train_mask = log_train_mask
 
     def forward(self, x: torch.Tensor, task_id: int, scalar: float, stage: str):
         # the forward process propagates input to logits of classes of task_id
@@ -93,8 +99,14 @@ class HAT(Finetuning):
         self.train_metrics[f"task{self.task_id}/train/loss/total"](loss_total)
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
-        # log_metrics
+        # log metrics
         loggerpack.log_train_metrics(self, self.train_metrics)
+
+        # log mask
+        if self.log_train_mask:
+            loggerpack.log_train_mask(
+                mask, self.task_id, self.global_step, plot_figure=True
+            )
 
         # return loss or backpropagation will fail
         return loss_total
@@ -125,24 +137,10 @@ class HAT(Finetuning):
         loggerpack.log_val_metrics(self, self.val_metrics)
 
     def on_test_start(self):
+        # log test mask
         mask = self.mask_memory.get_mask(self.task_id)
         previous_mask = self.mask_memory.get_union_mask()
-        for logger in self.loggers:
-            if type(logger) == TensorBoardLogger:
-                tensorboard = logger.experiment
-                # show mask
-                for module_name, m in mask.items():
-                    fig = plt.figure()
-                    plt.imshow(m.detach(), aspect=10, cmap="Greys")
-                    plt.colorbar()
-                    tensorboard.add_figure(
-                        f"test/mask/task{self.task_id}/{module_name}", fig
-                    )
-                for module_name, m in previous_mask.items():
-                    fig = plt.figure()
-                    plt.imshow(m.detach(), aspect=10, cmap="Greys")
-                    plt.colorbar()
-                    tensorboard.add_figure(f"test/mask/previous/{module_name}", fig)
+        loggerpack.log_test_mask(mask, previous_mask, self.task_id)
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         x, y = batch

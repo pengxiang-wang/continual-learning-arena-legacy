@@ -16,6 +16,8 @@ from src.utils import pylogger, loggerpack
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_loggerpack()
 
+DEFAULT_SMAX = 400.0
+
 
 class HATNonUnion(HAT):
     """LightningModule for HAT (Hard Attention to Task) continual learning algorithm."""
@@ -26,10 +28,13 @@ class HATNonUnion(HAT):
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
-        s_max: float,
         reg: torch.nn.Module,
+        s_max: float = DEFAULT_SMAX,
+        log_train_mask=False,
     ):
-        super().__init__(head, backbone, optimizer, scheduler, s_max, reg)
+        super().__init__(
+            head, backbone, optimizer, scheduler, reg, s_max, log_train_mask
+        )
 
     def training_step(self, batch: Any, batch_idx: int):
         x, y = batch
@@ -67,6 +72,12 @@ class HATNonUnion(HAT):
 
         # log_metrics
         loggerpack.log_train_metrics(self, self.train_metrics)
+
+        # log mask
+        if self.log_train_mask:
+            loggerpack.log_train_mask(
+                mask, self.task_id, self.global_step, plot_figure=True
+            )
 
         # return loss or backpropagation will fail
         return loss_total

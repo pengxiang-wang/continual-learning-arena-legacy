@@ -4,24 +4,24 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: til_split_mnist.yaml
-  - override /model: til_mlp_hat.yaml
+  - override /data: til_permuted_cifar10.yaml
+  - override /model: finetuning/mlp_til.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "hat_smnist"
+experiment_name: "finetuning_til_pcifar10"
 
-tags: ["example", "TIL", "Split MNIST", "MLP", "HAT"]
+tags:  ["TIL", "Permuted CIFAR10", "MLP", "Finetuning"]
 
 seed: 12345
 
 model:
   backbone:
-    input_size: 784
-    
+    input_size: 3072
+
 trainer:
   max_epochs: 10
 

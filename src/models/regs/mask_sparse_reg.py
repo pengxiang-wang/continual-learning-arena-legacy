@@ -14,19 +14,38 @@ class MaskSparseReg(nn.Module):
         self.factor = factor  # regularisation factor
 
     def forward(self, mask, mask_ref):
-        reg_total = 0  # reg value
+        reg1_total = 0  # reg value
+        reg2_total = 0
         reg = {}  # reg value from each part of mask
-        count_total = 0
+        count1_total = 0
+        count2_total = 0
         for module_name in mask.keys():
             m = mask[module_name]
             m_ref = mask_ref[module_name]
-            aux = 1 - m_ref
-            reg_l = (m * aux).sum()
-            reg_total += reg_l
-            count_l = aux.sum()
-            reg_l = reg_l / count_l
+            m_ref_reverse = 1 - m_ref
+
+            reg1_l = (m * m_ref_reverse).sum()
+            reg1_total += reg1_l
+            count1_l = m_ref_reverse.sum()
+            count1_total += count1_l
+            reg1_l = reg1_l / count1_l if count1_l > 10 else 0
+
+            reg2_l = (m * m_ref).sum()
+            reg2_total += reg2_l
+            count2_l = m_ref.sum()
+            count2_total += count2_l
+            reg2_l = 1 - reg2_l / count2_l if count2_l > 10 else 1
+
+            reg_l = 0.5 * (reg1_l + reg2_l)
             reg[module_name] = reg_l
-            count_total += count_l
-        reg_total = reg_total / count_total
+
+            # print(f"reg1{module_name}", reg1_l)
+            # print(f"reg2{module_name}", reg2_l)
+            # print(f"reg{module_name}", reg_l)
+
+        reg1_total = reg1_total / count1_total if count1_total > 10 else 0
+        reg2_total = 1 - reg2_total / count2_total if count2_total > 10 else 1
+
+        reg_total = 0.5 * (reg1_total + reg2_total)
         # print(reg_total)
         return self.factor * reg_total, reg_total, reg

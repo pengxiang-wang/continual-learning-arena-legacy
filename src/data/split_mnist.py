@@ -13,10 +13,10 @@ log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_loggerpack()
 
 NUM_CLASSES = 10
-INPUT_SIZE = (1,28,28)
-INPUT_LEN = 1*28*28
-MEAN = (0.1307, )
-STD = (0.3081, )
+INPUT_SIZE = (1, 28, 28)
+INPUT_LEN = 1 * 28 * 28
+MEAN = (0.1307,)
+STD = (0.3081,)
 
 DEFAULT_CLASS_SPLIT = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
 

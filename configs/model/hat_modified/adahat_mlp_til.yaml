@@ -1,6 +1,7 @@
-_target_: src.models.HAT
+_target_: src.models.AdaHAT
 
 s_max: 400.0
+adjust_rate: 1e-06
 reg:
   _target_: src.models.regs.MaskSparseReg
   factor: 0.1

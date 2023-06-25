@@ -13,12 +13,13 @@ log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_loggerpack()
 
 NUM_CLASSES = 100
-INPUT_SIZE = (3,32,32)
-INPUT_LEN = 3*32*32
-MEAN = (0.5071, 0.4865, 0.4409)
-STD = (0.2673, 0.2564, 0.2762)
+INPUT_SIZE = (3, 32, 32)
+INPUT_LEN = 3 * 32 * 32
+MEAN = (0.5, 0.5, 0.5)
+STD = (0.5, 0.5, 0.5)
 
-DEFAULT_PERM_SEEDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+DEFAULT_NUM_TASKS = 10
+DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
 
 
 class PermutedCIFAR100(LightningDataModule):
@@ -31,7 +32,7 @@ class PermutedCIFAR100(LightningDataModule):
         self,
         data_dir: str = "data/",
         scenario: str = "TIL",
-        num_tasks: int = 10,
+        num_tasks: int = DEFAULT_NUM_TASKS,
         perm_seeds: List[int] = DEFAULT_PERM_SEEDS,
         val_pc: float = 0.1,
         batch_size: int = 64,

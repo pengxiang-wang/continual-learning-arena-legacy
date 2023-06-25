@@ -15,26 +15,30 @@ class MaskedMLP(nn.Module):
     ):
         super().__init__()
 
+        self.te = nn.ModuleDict()  # task embeddings over features
+        self.mask_gate = nn.Sigmoid()
+
         self.fc = nn.ModuleList()
         self.bn = nn.ModuleList()
         self.activation = nn.ModuleList()
-        self.te = nn.ModuleDict()  # task embeddings over features
-        self.mask_gate = nn.Sigmoid()
 
         self.layer_num = len(hidden_size) + 1
         for l in range(self.layer_num):
             if l == 0:
                 self.fc.append(nn.Linear(input_size, hidden_size[l]))
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
                 self.te[f"fc{l}"] = nn.Embedding(1, hidden_size[l])
+                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+
             elif l == self.layer_num - 1:
                 self.fc.append(nn.Linear(hidden_size[l - 1], output_size))
-                self.bn.append(nn.BatchNorm1d(output_size))
                 self.te[f"fc{l}"] = nn.Embedding(1, output_size)
+                self.bn.append(nn.BatchNorm1d(output_size))
+
             else:
                 self.fc.append(nn.Linear(hidden_size[l - 1], hidden_size[l]))
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
                 self.te[f"fc{l}"] = nn.Embedding(1, hidden_size[l])
+                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+
             self.activation.append(nn.ReLU())
 
         self.test_mask = None
@@ -65,7 +69,8 @@ class MaskedMLP(nn.Module):
             if additional_mask:
                 m_add = additional_mask[f"fc{l}"]
                 h = m_add * h  # apply additional mask
-            # h = self.bn[l](h) # problem!
+            if stage == "train":  # problem! don't apply batchnorm at test stage
+                h = self.bn[l](h)
             a = self.activation[l](h)
 
             mask[f"fc{l}"] = m

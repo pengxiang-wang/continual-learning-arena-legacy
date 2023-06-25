@@ -7,6 +7,8 @@ from lightning import LightningModule
 from lightning.pytorch.loggers import Logger as LightningLogger
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities import rank_zero_only
+import matplotlib.pyplot as plt
+
 
 from src.utils import pylogger
 
@@ -177,18 +179,97 @@ class LoggerPack:
             writer = csv.DictWriter(file, fieldnames=to_be_writed.keys())
             writer.writerow(to_be_writed)
 
-    # def log_test_mask(
-    #     self,
-    # ):
-    #     for logger in self.loggers:
-    #         if type(logger) == TensorBoardLogger:
-    #             tensorboard = logger.experiment
-    #             # show mask
-    #             for module_name, m in mask.items():
-    #                 fig = plt.figure()
-    #                 plt.imshow(m.detach(), aspect=10, cmap="Greys")
-    #                 plt.colorbar()
-    #                 tensorboard.add_figure(f"train/mask/{module_name}", fig)
+    def log_train_mask(
+        self,
+        mask,
+        task_id: int,
+        step: int,
+        every_n_train_steps: int = 50,
+        plot_figure: bool = False,
+    ):
+        if step % every_n_train_steps != 0:
+            return
+        mask_src_dir = os.path.join(self.log_dir, "mask/", "train/", "src/")
+        if not os.path.exists(mask_src_dir):
+            try:
+                os.mkdir(mask_src_dir)
+            except:
+                os.makedirs(mask_src_dir)
+
+        mask_src_path = os.path.join(mask_src_dir, f"task{task_id}_step{step}.pt")
+        torch.save(mask, mask_src_path)
+
+        if plot_figure:
+            for module_name, m in mask.items():
+                fig = plt.figure()
+                plt.imshow(m.detach(), aspect=10, cmap="Greys")
+                plt.colorbar()
+
+                mask_fig_dir = os.path.join(self.log_dir, "mask/", "train/", "fig/")
+                if not os.path.exists(mask_fig_dir):
+                    try:
+                        os.mkdir(mask_fig_dir)
+                    except:
+                        os.makedirs(mask_fig_dir)
+
+                mask_fig_path = os.path.join(
+                    mask_fig_dir, f"{module_name}_task{task_id}_step{step}.png"
+                )
+                plt.savefig(mask_fig_path)
+
+    def log_test_mask(
+        self,
+        mask,
+        previous_mask,
+        task_id: int,
+    ):
+        mask_src_dir = os.path.join(self.log_dir, "mask/", "test/", "src/")
+        if not os.path.exists(mask_src_dir):
+            try:
+                os.mkdir(mask_src_dir)
+            except:
+                os.makedirs(mask_src_dir)
+
+        mask_src_path = os.path.join(mask_src_dir, f"task{task_id}.pt")
+        torch.save(mask, mask_src_path)
+
+        mask_fig_dir = os.path.join(self.log_dir, "mask/", "test/", "fig/")
+        if not os.path.exists(mask_fig_dir):
+            try:
+                os.mkdir(mask_fig_dir)
+            except:
+                os.makedirs(mask_fig_dir)
+
+        tensorboard = None
+        for logger in self.loggers:
+            if type(logger) == TensorBoardLogger:
+                tensorboard = logger.experiment  # show mask fig in tensorboard
+
+        for module_name, m in mask.items():
+            fig = plt.figure()
+            plt.imshow(m.detach(), aspect=10, cmap="Greys")
+            plt.colorbar()
+
+            mask_fig_path = os.path.join(
+                mask_fig_dir, f"{module_name}_task{task_id}.png"
+            )
+            plt.savefig(mask_fig_path)
+
+            if tensorboard:
+                tensorboard.add_figure(f"test/mask/task{task_id}/{module_name}", fig)
+
+        for module_name, m in previous_mask.items():
+            fig = plt.figure()
+            plt.imshow(m.detach(), aspect=10, cmap="Greys")
+            plt.colorbar()
+
+            mask_fig_path = os.path.join(
+                mask_fig_dir, f"{module_name}_previous_task{task_id}.png"
+            )
+            plt.savefig(mask_fig_path)
+
+            if tensorboard:
+                tensorboard.add_figure(f"test/mask/previous/{module_name}", fig)
 
     # def check_lightning_module(log_func: Callable) -> Callable:
     #     """Decorator that checks if a log method in LoggerWrapper is executed within a LightningModule.
