@@ -9,7 +9,9 @@ def hard_clip_te_masked_gradients(backbone: nn.Module, union_mask):
     for module_name, module in backbone.named_modules():
         module_name = module_name.replace(".", "")
         if module_name in union_mask.keys():
-            module.weight.grad.data *= 1 - union_mask[module_name].transpose(0, 1)
+            view_shape = [1 for i in range(module.weight.grad.data.dim())]
+            view_shape[0] = -1
+            module.weight.grad.data *= 1 - union_mask[module_name].view(*view_shape)
 
 
 def soft_clip_te_masked_gradients(
@@ -21,15 +23,17 @@ def soft_clip_te_masked_gradients(
 
         if module_name in sum_mask.keys():
             # print(mask_sparse_loss[module_name])
-            if random.random() < 0.5 * (1 - mask_sparse_loss[module_name]):
+            view_shape = [1 for i in range(module.weight.grad.data.dim())]
+            view_shape[0] = -1
+            if random.random() < (1 - mask_sparse_loss[module_name]):
                 # print(mask_sparse_loss)
-                adjust = adjust_rate / (0.1 + mask_sparse_loss[module_name])
+                adjust = adjust_rate # / (0.1 + mask_sparse_loss[module_name])
                 # print(adjust.size())
                 factor = torch.div(
-                    adjust, (sum_mask[module_name].transpose(0, 1) + adjust)
+                    adjust, (sum_mask[module_name].view(*view_shape) + adjust)
                 )
             else:
-                factor = 1 - union_mask[module_name].transpose(0, 1)
+                factor = 1 - union_mask[module_name].view(*view_shape)
             # print(factor[0])
             module.weight.grad.data *= factor
 

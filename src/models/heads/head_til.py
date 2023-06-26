@@ -7,16 +7,16 @@ from torch import nn
 class HeadTIL(nn.Module):
     def __init__(
         self,
-        input_size: int = 64,
+        input_dim: int = 64,
     ):
         super().__init__()
 
-        self.input_size = input_size
+        self.input_dim = input_dim
         self.heads: nn.ModuleList = nn.ModuleList()  # init empty
 
     def new_task(self, classes: List[Any]) -> None:
-        output_size = len(classes)
-        self.heads.append(nn.Linear(self.input_size, output_size))
+        output_dim = len(classes)
+        self.heads.append(nn.Linear(self.input_dim, output_dim))
 
     def forward(self, feature: torch.Tensor, task_id: int):
         head = self.heads[task_id]
@@ -25,4 +25,4 @@ class HeadTIL(nn.Module):
 
 
 if __name__ == "__main__":
-    _ = HeadTIL(input_size=64)
+    _ = HeadTIL(input_dim=64)

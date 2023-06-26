@@ -7,9 +7,9 @@ from torch import nn
 class MLP(nn.Module):
     def __init__(
         self,
-        input_size: int = 784,
-        hidden_size: List[int] = [256, 256],
-        output_size: int = 64,
+        input_dim: int = 784,
+        hidden_dims: List[int] = [256, 256],
+        output_dim: int = 64,
     ):
         super().__init__()
 
@@ -17,17 +17,17 @@ class MLP(nn.Module):
         self.bn = nn.ModuleList()
         self.activation = nn.ModuleList()
 
-        self.layer_num = len(hidden_size) + 1
+        self.layer_num = len(hidden_dims) + 1
         for l in range(self.layer_num):
             if l == 0:
-                self.fc.append(nn.Linear(input_size, hidden_size[l]))
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+                self.fc.append(nn.Linear(input_dim, hidden_dims[l]))
+                self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
             elif l == self.layer_num - 1:
-                self.fc.append(nn.Linear(hidden_size[l - 1], output_size))
-                self.bn.append(nn.BatchNorm1d(output_size))
+                self.fc.append(nn.Linear(hidden_dims[l - 1], output_dim))
+                self.bn.append(nn.BatchNorm1d(output_dim))
             else:
-                self.fc.append(nn.Linear(hidden_size[l - 1], hidden_size[l]))
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+                self.fc.append(nn.Linear(hidden_dims[l - 1], hidden_dims[l]))
+                self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
             self.activation.append(nn.ReLU())
 
     def forward(self, x):

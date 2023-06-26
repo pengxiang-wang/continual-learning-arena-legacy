@@ -19,4 +19,4 @@ backbone:
 
 head:
   _target_: src.models.heads.HeadTIL
-  input_size: 512
+  input_dim: 512

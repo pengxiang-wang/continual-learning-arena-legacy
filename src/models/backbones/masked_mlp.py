@@ -9,35 +9,36 @@ class MaskedMLP(nn.Module):
 
     def __init__(
         self,
-        input_size: int = 784,
-        hidden_size: List[int] = [256, 256],
-        output_size: int = 64,
+        input_dim: int = 784,
+        hidden_dims: List[int] = [256, 256],
+        output_dim: int = 64,
     ):
         super().__init__()
 
         self.te = nn.ModuleDict()  # task embeddings over features
         self.mask_gate = nn.Sigmoid()
+        self.test_mask = None
 
         self.fc = nn.ModuleList()
         self.bn = nn.ModuleList()
         self.activation = nn.ModuleList()
 
-        self.layer_num = len(hidden_size) + 1
+        self.layer_num = len(hidden_dims) + 1
         for l in range(self.layer_num):
             if l == 0:
-                self.fc.append(nn.Linear(input_size, hidden_size[l]))
-                self.te[f"fc{l}"] = nn.Embedding(1, hidden_size[l])
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+                self.fc.append(nn.Linear(input_dim, hidden_dims[l]))
+                self.te[f"fc{l}"] = nn.Embedding(1, hidden_dims[l])
+                self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
 
             elif l == self.layer_num - 1:
-                self.fc.append(nn.Linear(hidden_size[l - 1], output_size))
-                self.te[f"fc{l}"] = nn.Embedding(1, output_size)
-                self.bn.append(nn.BatchNorm1d(output_size))
+                self.fc.append(nn.Linear(hidden_dims[l - 1], output_dim))
+                self.te[f"fc{l}"] = nn.Embedding(1, output_dim)
+                self.bn.append(nn.BatchNorm1d(output_dim))
 
             else:
-                self.fc.append(nn.Linear(hidden_size[l - 1], hidden_size[l]))
-                self.te[f"fc{l}"] = nn.Embedding(1, hidden_size[l])
-                self.bn.append(nn.BatchNorm1d(hidden_size[l]))
+                self.fc.append(nn.Linear(hidden_dims[l - 1], hidden_dims[l]))
+                self.te[f"fc{l}"] = nn.Embedding(1, hidden_dims[l])
+                self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
 
             self.activation.append(nn.ReLU())
 
@@ -57,7 +58,7 @@ class MaskedMLP(nn.Module):
         # (batch, 1, width, height) -> (batch, 1*width*height)
         a = x.view(batch_size, -1)
 
-        mask = {}
+        mask_record = {}
         for l in range(self.layer_num):
             h = self.fc[l](a)
             m = (
@@ -65,26 +66,27 @@ class MaskedMLP(nn.Module):
                 if stage == "fit"
                 else self.test_mask[f"fc{l}"]
             )
+            mask_record[f"fc{l}"] = m
             h = m * h  # apply mask
+
             if additional_mask:
                 m_add = additional_mask[f"fc{l}"]
                 h = m_add * h  # apply additional mask
+
             if stage == "train":  # problem! don't apply batchnorm at test stage
                 h = self.bn[l](h)
             a = self.activation[l](h)
-
-            mask[f"fc{l}"] = m
 
         # if stage == "test":
         # print(a)
         # print(self.mask(self.te[f"fc1"], scalar))
         # print(self.test_mask[f"fc1"])
         # print(a)
-        return a, mask
+        return a, mask_record
 
 
 if __name__ == "__main__":
-    net = MaskedMLP(input_size=784, hidden_size=[256, 256], output_size=64)
+    net = MaskedMLP(input_dim=784, hidden_dims=[256, 256], output_dim=64)
     print(net)
     for n, p in net.named_modules():
         print(n, p)

@@ -8,18 +8,18 @@ from torch import nn
 class HeadCIL(nn.Module):
     def __init__(
         self,
-        input_size: int = 64,
+        input_dim: int = 64,
     ):
         super().__init__()
 
-        self.input_size = input_size
-        self.output_size = 0
+        self.input_dim = input_dim
+        self.output_dim = 0
         self.heads: nn.ModuleList = nn.ModuleList()  # init empty
 
     def new_task(self, classes: List[Any]):
-        output_size_new = len(classes) - self.output_size
-        self.heads.append(nn.Linear(self.input_size, output_size_new))
-        self.output_size = len(classes)
+        output_dim_new = len(classes) - self.output_dim
+        self.heads.append(nn.Linear(self.input_dim, output_dim_new))
+        self.output_dim = len(classes)
 
     def forward(self, feature, task_id=None):
         logits = torch.cat([head(feature) for head in self.heads], dim=-1)
@@ -27,4 +27,4 @@ class HeadCIL(nn.Module):
 
 
 if __name__ == "__main__":
-    _ = HeadCIL(input_size=64)
+    _ = HeadCIL(input_dim=64)

@@ -144,12 +144,12 @@ def set_test(
     model.ave_test_acc = MeanMetric()
 
 
-def distribute_task_train_val_test_split(
-    train_val_test_split: Tuple[int, int, int], num_data: int, num_data_task: int
-):
-    pc = num_data_task / num_data
-    print()
-    train_val_test_split_task = [int(pc * num) for num in train_val_test_split]
-    train_val_test_split_task[0] = num_data_task - sum(train_val_test_split_task[1:])
-    train_val_test_split_task = tuple(train_val_test_split_task)
-    return train_val_test_split_task
+# def distribute_task_train_val_test_split(
+#     train_val_test_split: Tuple[int, int, int], num_data: int, num_data_task: int
+# ):
+#     pc = num_data_task / num_data
+#     print()
+#     train_val_test_split_task = [int(pc * num) for num in train_val_test_split]
+#     train_val_test_split_task[0] = num_data_task - sum(train_val_test_split_task[1:])
+#     train_val_test_split_task = tuple(train_val_test_split_task)
+#     return train_val_test_split_task

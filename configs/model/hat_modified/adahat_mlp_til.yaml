@@ -22,10 +22,10 @@ scheduler:
 
 backbone:
   _target_: src.models.backbones.MaskedMLP
-  input_size: 784
-  hidden_size: [256, 100]
-  output_size: 64
+  input_dim: 784
+  hidden_dims: [256, 100]
+  output_dim: 64
 
 head:
   _target_: src.models.heads.HeadTIL
-  input_size: ${model.backbone.output_size}
+  input_dim: ${model.backbone.output_dim}

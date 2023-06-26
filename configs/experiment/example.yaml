@@ -27,8 +27,8 @@ model:
   optimizer:
     lr: 0.002
   backbone:
-    hidden_size: [128, 256]
-    output_size: 64
+    hidden_dims: [128, 256]
+    output_dim: 64
 
 data:
   batch_size: 64

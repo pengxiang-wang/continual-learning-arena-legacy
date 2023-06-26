@@ -5,6 +5,8 @@ class ResNet(nn.Module):
     def __init__(self, block, layer_nums, input_channels):
         super().__init__()
 
+        input_channels = input_channels[0]
+
         self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
@@ -56,21 +58,20 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
     def forward(self, x):
-        
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
+        h = self.conv1(x)
+        h = self.bn1(h)
+        a = self.relu(h)
+        a = self.maxpool(a)
 
-        x = self.conv2_x(x)
-        x = self.conv3_x(x)
-        x = self.conv4_x(x)
-        x = self.conv5_x(x)
+        a = self.conv2_x(a)
+        a = self.conv3_x(a)
+        a = self.conv4_x(a)
+        a = self.conv5_x(a)
 
-        x = self.avgpool(x)
-        x = x.reshape(x.shape[0], -1)  # output feature 2048
+        a = self.avgpool(a)
+        a = a.reshape(a.shape[0], -1)
 
-        return x
+        return a
 
     def _make_layer(
         self, block, num_residual_blocks, expansion, in_channels, out_channels, stride
@@ -125,20 +126,20 @@ class BasicBlockSmall(nn.Module):
 
     def forward(self, x):
         identity = x
-        
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
+
+        h = self.conv1(x)
+        h = self.bn1(h)
+        a = self.relu(h)
+
+        h = self.conv2(a)
+        h = self.bn2(h)
 
         if self.identity_downsample is not None:
             identity = self.identity_downsample(identity)
-        x = x + identity  # residual
+        h = h + identity  # residual
 
-        x = self.relu(x)
-        return x
+        a = self.relu(h)
+        return a
 
 
 class BasicBlockLarge(nn.Module):
@@ -170,45 +171,47 @@ class BasicBlockLarge(nn.Module):
     def forward(self, x):
         identity = x
 
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        x = self.conv3(x)
-        x = self.bn3(x)
+        h = self.conv1(x)
+        h = self.bn1(h)
+        a = self.relu(h)
+
+        h = self.conv2(a)
+        h = self.bn2(h)
+        a = self.relu(h)
+
+        h = self.conv3(a)
+        h = self.bn3(h)
 
         if self.identity_downsample is not None:
             identity = self.identity_downsample(identity)
-        x = x + identity
+        h = h + identity
 
-        x = self.relu(x)
-        return x
+        a = self.relu(h)
+        return a
 
 
 class ResNet18(ResNet):
-    def __init__(self, input_channels=3):
+    def __init__(self, input_channels):
         super().__init__(BasicBlockSmall, [2, 2, 2, 2], input_channels)
 
 
 class ResNet34(ResNet):
-    def __init__(self, input_channels=3):
+    def __init__(self, input_channels):
         super().__init__(BasicBlockSmall, [3, 4, 6, 3], input_channels)
 
 
 class ResNet50(ResNet):
-    def __init__(self, input_channels=3):
+    def __init__(self, input_channels):
         super().__init__(BasicBlockLarge, [3, 4, 6, 3], input_channels)
 
 
 class ResNet101(ResNet):
-    def __init__(self, input_channels=3):
+    def __init__(self, input_channels):
         super().__init__(BasicBlockLarge, [3, 4, 23, 3], input_channels)
 
 
 class ResNet152(ResNet):
-    def __init__(self, input_channels=3):
+    def __init__(self, input_channels):
         super().__init__(BasicBlockLarge, [3, 8, 36, 3], input_channels)
 
 

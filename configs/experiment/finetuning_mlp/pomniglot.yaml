@@ -20,7 +20,7 @@ seed: 12345
 
 model:
   backbone:
-    input_size: 11025
+    input_dim: 11025
     
 trainer:
   max_epochs: 10

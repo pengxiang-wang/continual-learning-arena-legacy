@@ -1,8 +1,4 @@
-from src.utils.continual_utils import (
-    set_task_train,
-    set_test,
-    distribute_task_train_val_test_split,
-)
+from src.utils.continual_utils import set_task_train, set_test
 from src.utils.instantiators import instantiate_callbacks, instantiate_lightning_loggers
 from src.utils.loggerpack import LoggerPack, globalise_loggerpack, get_loggerpack
 from src.utils.pylogger import get_pylogger

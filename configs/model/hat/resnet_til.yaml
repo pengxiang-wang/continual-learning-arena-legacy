@@ -1,4 +1,11 @@
-_target_: src.models.Finetuning
+_target_: src.models.HAT
+
+s_max: 400.0
+reg:
+  _target_: src.models.regs.MaskSparseReg
+  factor: 0.1
+
+log_train_mask: False
 
 optimizer:
   _target_: torch.optim.Adam
@@ -14,11 +21,9 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.MLP
-  input_dim: 784
-  hidden_dims: [256, 100]
-  output_dim: 64
+  _target_: src.models.backbones.MaskedResNet18
+  input_channels: 3
 
 head:
   _target_: src.models.heads.HeadTIL
-  input_dim: ${model.backbone.output_dim}
+  input_dim: 512
