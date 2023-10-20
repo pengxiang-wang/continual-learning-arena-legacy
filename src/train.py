@@ -28,7 +28,7 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src import utils
 from src.callbacks import ContinualCheckpoint, ContinualProgressBar
-from src.utils import pylogger, LoggerPack
+from src.utils import LoggerPack
 
 # prepare loggers
 log = utils.get_pylogger(__name__)
@@ -50,14 +50,17 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     """
 
     # prepare loggers
+    log.info("Instantiating loggers...")
     lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(
         cfg.get("logger")
     )
 
     loggerpack: LoggerPack = LoggerPack(
         loggers=lightning_loggers, log_dir=cfg.paths.output_dir
-    )
-    utils.globalise_loggerpack(loggerpack)
+    ) # loggers all in one pack
+    # make loggerpack available across all modules. There must be only one loggerpack instance. 
+    # after globalising, use `utils.get_global_loggerpack()` in other modules.
+    utils.globalise_loggerpack(loggerpack) 
 
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
@@ -65,11 +68,9 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     log.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
-    datamodule.loggerpack = loggerpack
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
-    datamodule.log = loggerpack
 
     if cfg.get("compile"):
         log.info("Compiling model!")
@@ -124,8 +125,9 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
                         "Best ckpt not found! Using current weights for testing..."
                     )
                     ckpt_path = None
-                trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
                 log.info(f"Best ckpt path: {ckpt_path}")
+                trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
+                
 
             test_metrics = trainer.callback_metrics
 

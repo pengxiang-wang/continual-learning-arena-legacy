@@ -7,7 +7,7 @@ from lightning import LightningModule
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_loggerpack()
+loggerpack = loggerpack.get_global_loggerpack()
 
 
 class Finetuning(LightningModule):
@@ -128,6 +128,7 @@ class Finetuning(LightningModule):
 
     def on_test_epoch_end(self):
         # update metrics
+        print(self.task_id)
         for t in range(self.task_id + 1):
             self.test_metrics_overall[f"test/loss/cls/ave"](
                 self.test_loss_cls[t].compute()
@@ -139,6 +140,18 @@ class Finetuning(LightningModule):
         loggerpack.log_test_metrics(
             self, self.test_metrics, self.test_metrics_overall, task_id=self.task_id
         )
+
+    def predict(self, batch: Any, task_id: int):
+        """Pure prediction.
+        
+        Returns:
+        preds (Tensor): predicted classes of batch.
+        prods (Tensor): scores of predicted classes of batch.        
+        """        
+        logits = self.forward(batch, task_id)
+        probs, preds = torch.max(logits, dim=1)        
+        return preds, probs
+
 
     def configure_optimizers(self):
         # choose optimizers

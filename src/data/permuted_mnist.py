@@ -10,7 +10,7 @@ from src.data import transforms as my_transforms
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_loggerpack()
+loggerpack = loggerpack.get_global_loggerpack()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (1, 28, 28)
@@ -51,15 +51,16 @@ class PermutedMNIST(LightningDataModule):
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
+        self.data_test_orig: Dict[int, Optional[Dataset]] = {}
         self.data_test: Dict[int, Optional[Dataset]] = {}
 
         # self maintained task_id counter
         self.task_id: Optional[int] = None
 
         # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-        )
+        self.base_transforms = {}
+        self.normalize_transform = transforms.Normalize(MEAN, STD)
+        
 
     @property
     def num_tasks(self) -> int:
@@ -81,7 +82,9 @@ class PermutedMNIST(LightningDataModule):
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        permutation_transform = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
+        
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
@@ -89,7 +92,7 @@ class PermutedMNIST(LightningDataModule):
             data_train_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.transforms, permutation]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -99,10 +102,18 @@ class PermutedMNIST(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
+            self.data_test_orig[self.task_id] = OrigDataset(
+                self.data_dir,
+                train=False,
+                transform=self.base_transforms[self.task_id],
+                target_transform=one_hot_index,
+                download=False,
+            )
+            
             self.data_test[self.task_id] = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.transforms, permutation]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )

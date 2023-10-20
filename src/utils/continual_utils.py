@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 from lightning import LightningModule, LightningDataModule, Trainer
 import lightning.pytorch as pl
@@ -25,12 +25,14 @@ def set_task_train(
     model.task_id = task_id
     trainer.task_id = task_id
 
+    test_task_id_list = range(task_id + 1)
+    
     # add new head
     classes = datamodule.classes(task_id)
     model.head.new_task(classes)
 
     num_classes = len(classes)
-    num_classes_total = [len(datamodule.classes(t)) for t in range(task_id + 1)]
+    num_classes_total = [len(datamodule.classes(t)) for t in test_task_id_list]
 
     # setup metrics
     # train metrics (single task)
@@ -78,7 +80,7 @@ def set_task_train(
     )
     model.val_metrics = val_metrics
     # test metrics (single task)
-    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in test_task_id_list])
     model.test_acc = nn.ModuleList(
         [
             Accuracy(task="multiclass", num_classes=num_classes)
@@ -118,32 +120,73 @@ def set_test(
     model: LightningModule,
     ckpt_path,
 ):
-    """Set data and model lightning modules to test task."""
+    """Set data and model lightning modules to test task.
+    
+    Args:
+        task_id_list (List[int]): List of task ids to be tested.
+    """
 
-    num_tasks_ckpt = torch.load(ckpt_path)["task_id"] + 1
+    model.task_id = torch.load(ckpt_path)["task_id"]
+    num_tasks_ckpt = model.task_id + 1
+    task_id_list = range(num_tasks_ckpt)
 
     # quick setup of datamodule and heads
-    for t in range(num_tasks_ckpt):
+    for t in task_id_list:
         datamodule.task_id = t
         datamodule.setup(stage="test")
         classes = datamodule.classes(t)
         model.head.new_task(classes)
 
-    num_classes_total = [len(datamodule.classes(t)) for t in range(num_tasks_ckpt)]
+    num_classes_total = [len(datamodule.classes(t)) for t in task_id_list]
 
     # setup metrics
-    # test metrics (across task)
-    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in num_classes_total])
+    # test metrics (across task)    
+    model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in task_id_list])
     model.test_acc = nn.ModuleList(
         [
             Accuracy(task="multiclass", num_classes=num_classes)
             for num_classes in num_classes_total
         ]
     )
-    model.ave_test_loss_cls = MeanMetric()
-    model.ave_test_acc = MeanMetric()
+    test_metrics = {}
+    test_metrics[f"test/loss/cls"] = model.test_loss_cls
+    test_metrics[f"test/acc"] = model.test_acc
+    model.test_metrics = test_metrics
+    # test metrics (overall across task)
+    model.test_loss_cls_ave = MeanMetric()
+    model.test_acc_ave = MeanMetric()
+    # model.test_bwt = None # not implemented, have to inherit from last
+    test_metrics_overall = {}
+    test_metrics_overall[f"test/loss/cls/ave"] = model.test_loss_cls_ave
+    test_metrics_overall[f"test/acc/ave"] = model.test_acc_ave
+    # test_metrics_overall[f"test/bwt"] = model.test_bwt
+    model.test_metrics_overall = test_metrics_overall
 
 
+def set_predict(
+    datamodule: LightningDataModule,
+    model: LightningModule,
+    ckpt_path,
+):
+    """Set data and model lightning modules to test task.
+    
+    Args:
+        task_id_list (List[int]): List of task ids to be tested.
+    """
+    model.eval() # manually set eval mode because predict.py doesn't use Lightning predicting APIs.
+
+    model.task_id = torch.load(ckpt_path)["task_id"]
+    num_tasks_ckpt = model.task_id + 1
+    task_id_list = range(num_tasks_ckpt)
+
+    # quick setup of datamodule and heads
+    for t in task_id_list:
+        datamodule.task_id = t
+        datamodule.setup(stage="test")
+        classes = datamodule.classes(t)
+        model.head.new_task(classes)
+        
+        
 # def distribute_task_train_val_test_split(
 #     train_val_test_split: Tuple[int, int, int], num_data: int, num_data_task: int
 # ):

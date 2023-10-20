@@ -2,6 +2,8 @@ import csv
 import os
 from typing import Any, Callable, List
 
+import numpy as np
+
 import torch
 from lightning import LightningModule
 from lightning.pytorch.loggers import Logger as LightningLogger
@@ -18,7 +20,7 @@ log = pylogger.get_pylogger(__name__)
 class LoggerPack:
     """Pack all kinds of loggers to be used everywhere.
 
-    PyTorch Lightning log only scalars. So we write this logger wrapper for other things to log.
+    Logs in PyTorch Lightning only support scalars. We wrote this logger wrapper for other things to be logged.
     """
 
     def __init__(self, loggers: List[LightningLogger], log_dir: str):
@@ -68,6 +70,7 @@ class LoggerPack:
         # send hparams to all loggers
         for logger in self.loggers:
             logger.log_hyperparams(hparams)
+
 
     def log_train_metrics(self, model: LightningModule, train_metrics: dict) -> None:
         """Log train metrics to loggers and progress bar.
@@ -178,6 +181,47 @@ class LoggerPack:
                 file.writelines(lines)
             writer = csv.DictWriter(file, fieldnames=to_be_writed.keys())
             writer.writerow(to_be_writed)
+            
+            
+            
+            
+    def log_batch_predicts(self, task_id, imgs, preds, probs, targets = None):
+        """Plot given images, along with predicted and true labels.
+
+        """
+        
+        fig = plt.figure()
+        fig.suptitle("Data from task {}".format(task_id))
+        
+        img_num = len(imgs)
+        column = 4
+        row = img_num // column + 1
+        
+        idx = 0
+        for img in imgs:
+            ax = fig.add_subplot(row, column, idx+1, xticks=[], yticks=[])
+            plt.imshow(np.transpose(img.numpy(), (1, 2, 0)))
+            if targets:
+                ax.set_title("pred: {0}, {1:.3f}\n(true label: {2})".format(
+                    preds[idx],
+                    probs[idx],
+                    targets[idx]),
+                            color=("green" if preds[idx]==targets[idx].item() else "red"))
+            else:
+                ax.set_title("predict: {0}, {1:.3f}".format(
+                    preds[idx],
+                    probs[idx]
+                    ))
+
+            idx += 1
+        plt.show()
+
+        return fig
+            
+            
+            
+            
+            
 
     def log_train_mask(
         self,
@@ -286,6 +330,6 @@ def globalise_loggerpack(loggerpack_local: LoggerPack) -> LoggerPack:
     loggerpack = loggerpack_local
 
 
-def get_loggerpack():
+def get_global_loggerpack():
     """Get the globalised loggerpack."""
     return loggerpack

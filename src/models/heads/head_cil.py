@@ -22,6 +22,7 @@ class HeadCIL(nn.Module):
         self.output_dim = len(classes)
 
     def forward(self, feature, task_id=None):
+        # always use all the heads regardless of task id. Therefore CIL predicts without the knowledge of task id
         logits = torch.cat([head(feature) for head in self.heads], dim=-1)
         return logits
 

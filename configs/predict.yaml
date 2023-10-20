@@ -11,7 +11,9 @@ defaults:
   - extras: default.yaml
   - hydra: default.yaml
 
-experiment_name: "eval"
+scenario: TIL
+
+experiment_name: "predict"
 
 tags: ["example", "default_experiment"]
 

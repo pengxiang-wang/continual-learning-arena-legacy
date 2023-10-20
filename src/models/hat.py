@@ -14,7 +14,7 @@ from src.models.memories import MaskMemory
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_loggerpack()
+loggerpack = loggerpack.get_global_loggerpack()
 
 
 DEFAULT_SMAX = 400.0
@@ -57,7 +57,7 @@ class HAT(Finetuning):
     def on_train_start(self):
         for embedding in self.backbone.te.values():
             # nn.init.constant_(embedding.weight, 1)
-            nn.init.uniform_(embedding.weight, -1, 1)
+            nn.init.uniform_(embedding.weight, -1, 0)
 
     def on_train_end(self):
         self.mask_memory.update(task_id=self.task_id, backbone=self.backbone)

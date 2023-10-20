@@ -14,7 +14,7 @@ from src.models.memories import MaskMemory
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_loggerpack()
+loggerpack = loggerpack.get_global_loggerpack()
 
 DEFAULT_SMAX = 400.0
 

@@ -33,8 +33,8 @@ log = utils.get_pylogger(__name__)
 
 
 @utils.task_wrapper
-def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
-    """Evaluates given checkpoint of continual learning model on a datamodule testset.
+def predict(cfg: DictConfig) -> Tuple[dict, dict]:
+    """Predicts batches from given dataloader with given checkpoint of continual learning model. It serves in a interactive way.
 
     This method is wrapped in optional @task_wrapper decorator, that controls the behavior during
     failure. Useful for multiruns, saving info about the crash, etc.
@@ -91,29 +91,50 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     if lightning_loggers:
         log.info("Logging hyperparameters!")
         loggerpack.log_hyperparameters(object_dict=object_dict)
-
-    utils.continual_utils.set_test(
+        
+    utils.continual_utils.set_predict(
         model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path
     )
+    
+    log.info("Ready for predicting!")
+    input_source = input("Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n")
+    while input_source != "q":
+        
+        # get ready for data and labels
+        task_id = int(input("Which task is your input from? Task ID: "))
+        if input_source == "1":
+            test_set_t = datamodule.data_test_orig[task_id] # get test data of task ID
+            img_idx = [int(idx) for idx in input("Which images? Index (allow multiple): ").split(" ")] # input image indices
+            imgs, batch, targets = utils.read_dataset_images(test_set_t, img_idx=img_idx, normalize_transform=datamodule.normalize_transform)
 
-    log.info("Starting testing!")
-    trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
-
-    # for predictions use trainer.predict(...)
-    # predictions = trainer.predict(model=model, dataloaders=dataloaders, ckpt_path=cfg.ckpt_path)
-
+        elif input_source == "2":
+            input_img_path = input("Your image path (allow multiple) or directory: ")
+            imgs, batch = utils.read_image(input_img_path, normalize_transform=datamodule.normalize_transform)
+            targets = input("Your image true label: ").split(" ")
+            
+        # predicting
+        preds, probs = model.predict(batch, task_id)
+        # visualisation
+        loggerpack.log_batch_predicts(task_id, imgs, preds, probs, targets=targets)
+        
+        input_source = input("Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n")
+        
+        
+    
+    
+    
     metric_dict = trainer.callback_metrics
 
     return metric_dict, object_dict
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="predict.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
     utils.extras(cfg)
 
-    evaluate(cfg)
+    predict(cfg)
 
 
 if __name__ == "__main__":

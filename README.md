@@ -326,8 +326,8 @@ Except for training from train.py, other modes are offered for other types of ex
 | Mode | Entrance | Description | 
 | :-: | :-: | :-: | 
 | Training | `python src/train.py [Optional]experiment=...` | Complete and formal experiment of training and (usually) evalution afterwards  |
-| Evaluation | `python src/eval.py ckpt_path="/path/to/ckpt/name.ckpt"` |  Purely evaluation (or prediction) of checkpoints of continual learning model. Checkpoint has to be provided. (Note: Checkpoint can be either path or URL.)
-  | 
+| Evaluation | `python src/eval.py ckpt_path="/path/to/ckpt/name.ckpt"` |  Purely evaluation of checkpoints of continual learning model. Checkpoint has to be provided. (Note: Checkpoint can be either path or URL.)|
+|Predicting|  `python src/predict.py ckpt_path="/path/to/ckpt/name.ckpt"`|  Purely prediction (with visualised samples)) of checkpoints of continual learning model. Checkpoint has to be provided. (Note: Checkpoint can be either path or URL.) | 
 | Debugging | `python src/train.py debug=...` |  Smaller experiment (usually 1 epoch) for debugging the code.  | 
 | Testing |   `pytest tests/... .py`    |  Sanity check for each Python module with PyTest   |
 | Github Actions |    -       |     -        |

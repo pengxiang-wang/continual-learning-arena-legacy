@@ -10,7 +10,7 @@ from src.data import transforms as my_transforms
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_loggerpack()
+loggerpack = loggerpack.get_global_loggerpack()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)
