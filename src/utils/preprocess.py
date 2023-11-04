@@ -18,14 +18,14 @@ def read_dataset_images(dataset: Dataset, img_idx: List[int], normalize_transfor
     Returns:
         img_list (List[Tensor]): unnormalized.
         batch (Tensor): normalized data as inputs to model.
-        target_list (List[Tensor]): targets are also retrieved from dataset.
+        target_list (Tensor): targets are also retrieved from dataset.
     
     """
     img_list = [dataset[idx][0] for idx in img_idx]
-    target_list = [dataset[idx][1] for idx in img_idx]
+    targets = torch.tensor([dataset[idx][1] for idx in img_idx])
     batch = torch.cat([normalize_transform(img).unsqueeze(0) for img in img_list], dim=0)
 
-    return img_list, batch, target_list
+    return img_list, batch, targets
 
 
 

@@ -74,6 +74,8 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
     )
     callbacks.extend([ContinualCheckpoint()])
     
+    
+    
     # trainer for evaluation
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(
@@ -111,17 +113,26 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
             input_img_path = input("Your image path (allow multiple) or directory: ")
             imgs, batch = utils.read_image(input_img_path, normalize_transform=datamodule.normalize_transform)
             targets = input("Your image true label: ").split(" ")
-            
+
         # predicting
         preds, probs = model.predict(batch, task_id)
+    
+        print(batch.size(), task_id)
+        # interpreting
+        is_interpreting = input("Do you want interpretation? [y/n]\n")
+        if is_interpreting == "y":
+            print(f"Initialising interpreter for task {task_id}...")
+            interpreter = hydra.utils.instantiate(
+                cfg.interpreter, forward_func=lambda x: model.forward(x, task_id)
+            )
+            attrs = interpreter.attribute(batch, targets)
+        elif is_interpreting == "n":
+            attrs = None 
+            
         # visualisation
-        loggerpack.log_batch_predicts(task_id, imgs, preds, probs, targets=targets)
+        loggerpack.log_predicts(task_id, imgs, preds, probs, targets=targets, attrs=attrs)
         
         input_source = input("Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n")
-        
-        
-    
-    
     
     metric_dict = trainer.callback_metrics
 
