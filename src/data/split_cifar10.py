@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10 as OrigDataset
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
@@ -57,9 +57,9 @@ class SplitCIFAR10(LightningDataModule):
         self.task_id: Optional[int] = None
 
         # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-        )
+        self.base_transforms = {}
+        self.normalize_transform = transforms.Normalize(MEAN, STD)
+        
 
     @property
     def num_tasks(self) -> int:
@@ -80,8 +80,8 @@ class SplitCIFAR10(LightningDataModule):
 
     def prepare_data(self):
         """Download data if needed."""
-        CIFAR10(self.data_dir, train=True, download=True)
-        CIFAR10(self.data_dir, train=False, download=True)
+        OrigDataset(self.data_dir, train=True, download=True)
+        OrigDataset(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
@@ -92,10 +92,10 @@ class SplitCIFAR10(LightningDataModule):
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_full_before_split = CIFAR10(
+            data_train_full_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.transforms]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -108,10 +108,10 @@ class SplitCIFAR10(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
-            data_test = CIFAR10(
+            data_test = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.transforms]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -121,7 +121,7 @@ class SplitCIFAR10(LightningDataModule):
 
     def _get_class_subset(
         self,
-        dataset: CIFAR10,
+        dataset: OrigDataset,
         classes: list[int],
     ) -> Dataset:
         """Get subset of dataset in certain classes, as an implementation for spliting dataset.

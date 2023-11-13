@@ -123,9 +123,9 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
         if is_interpreting == "y":
             print(f"Initialising interpreter for task {task_id}...")
             interpreter = hydra.utils.instantiate(
-                cfg.interpreter, forward_func=lambda x: model.forward(x, task_id)
+                cfg.interpreter, forward_func=model
             )
-            attrs = interpreter.attribute(batch, targets)
+            attrs = interpreter.attribute(batch, targets, additional_forward_args=task_id)
         elif is_interpreting == "n":
             attrs = None 
             

@@ -195,7 +195,7 @@ class LoggerPack:
         
         img_num = len(imgs)
         column = 4
-        row = (2 * img_num) // column + 1
+        row = (2 * img_num) // column + 1  
         
         for idx, img in enumerate(imgs):
             
@@ -223,10 +223,6 @@ class LoggerPack:
         plt.show()
 
         return fig
-            
-            
-            
-            
             
 
     def log_train_mask(

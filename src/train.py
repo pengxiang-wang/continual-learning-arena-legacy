@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Tuple
 
 import hydra
@@ -6,6 +7,7 @@ import pyrootutils
 import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger as LightningLogger
+from lightning.pytorch.profilers import SimpleProfiler
 from omegaconf import DictConfig
 
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
@@ -85,9 +87,11 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
             )
             callbacks.extend([ContinualCheckpoint(), ContinualProgressBar()])
 
+            profiler = SimpleProfiler(dirpath=os.path.join(cfg.paths.output_dir, "profilers"), filename=f"task{task_id}")
+
             log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
             trainer: Trainer = hydra.utils.instantiate(
-                cfg.trainer, callbacks=callbacks, logger=lightning_loggers
+                cfg.trainer, callbacks=callbacks, logger=lightning_loggers, profiler=profiler,
             )
 
             object_dict = {

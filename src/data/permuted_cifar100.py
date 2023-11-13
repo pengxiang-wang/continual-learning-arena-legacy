@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision.datasets import CIFAR100
+from torchvision.datasets import CIFAR100 as OrigDataset
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
@@ -57,10 +57,10 @@ class PermutedCIFAR100(LightningDataModule):
         self.task_id: Optional[int] = None
 
         # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-        )
-
+        self.base_transforms = {}
+        self.normalize_transform = transforms.Normalize(MEAN, STD)
+        
+        
     @property
     def num_tasks(self) -> int:
         return self.hparams.num_tasks
@@ -71,8 +71,8 @@ class PermutedCIFAR100(LightningDataModule):
 
     def prepare_data(self):
         """Download data if needed."""
-        CIFAR100(self.data_dir, train=True, download=True)
-        CIFAR100(self.data_dir, train=False, download=True)
+        OrigDataset(self.data_dir, train=True, download=True)
+        OrigDataset(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
@@ -81,15 +81,17 @@ class PermutedCIFAR100(LightningDataModule):
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        permutation_transform = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
+        
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_before_split = CIFAR100(
+            data_train_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.transforms, permutation]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -99,10 +101,10 @@ class PermutedCIFAR100(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
-            self.data_test[self.task_id] = CIFAR100(
+            self.data_test[self.task_id] = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.transforms, permutation]),
+                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
                 download=False,
             )
