@@ -5,7 +5,7 @@
 
 defaults:
   - override /data: til_permuted_mnist.yaml
-  - override /model: til_mlp_finetuning.yaml
+  - override /model: finetuning_mlp_til.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 

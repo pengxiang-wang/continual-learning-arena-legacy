@@ -1,6 +1,6 @@
 from typing import Any, Dict
 import torch
-from torch.optim import Optimizer
+from torch.optim.optimizer import _params_t
 
 torch.optim.SGD
 

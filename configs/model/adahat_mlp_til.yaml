@@ -6,6 +6,7 @@ reg:
   _target_: src.models.regs.MaskSparseReg
   factor: 0.1
 
+log_train_mask: False
 
 optimizer:
   _target_: torch.optim.Adam

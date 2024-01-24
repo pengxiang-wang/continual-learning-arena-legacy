@@ -56,8 +56,7 @@ class HAT(Finetuning):
 
     def on_train_start(self):
         for embedding in self.backbone.te.values():
-            # nn.init.constant_(embedding.weight, 1)
-            nn.init.uniform_(embedding.weight, -1, 0)
+            nn.init.normal_(embedding.weight, 0, 1)
 
     def on_train_end(self):
         self.mask_memory.update(task_id=self.task_id, backbone=self.backbone)

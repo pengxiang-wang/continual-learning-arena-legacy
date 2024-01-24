@@ -5,8 +5,6 @@ class ResNet(nn.Module):
     def __init__(self, block, layer_nums, input_channels):
         super().__init__()
 
-        input_channels = input_channels[0]
-
         self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()

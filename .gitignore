@@ -153,6 +153,7 @@ configs/local/default.yaml
 /data/
 /logs/
 /logs_saved/
+/summary/
 .env
 
 # Aim logging
