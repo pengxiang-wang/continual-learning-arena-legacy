@@ -51,6 +51,7 @@ class PermutedCIFAR10(LightningDataModule):
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
+        self.data_test_orig: Dict[int, Optional[Dataset]] = {}
         self.data_test: Dict[int, Optional[Dataset]] = {}
 
         # self maintained task_id counter
@@ -101,6 +102,14 @@ class PermutedCIFAR10(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
+            self.data_test_orig[self.task_id] = OrigDataset(
+                self.data_dir,
+                train=False,
+                transform=self.base_transforms[self.task_id],
+                target_transform=one_hot_index,
+                download=False,
+            )
+            
             self.data_test[self.task_id] = OrigDataset(
                 self.data_dir,
                 train=False,
