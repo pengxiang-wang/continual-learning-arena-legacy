@@ -10,7 +10,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "HAT_2"
+experiment_name: "AdaHAT_2"
 
 tags: ["TIL", "Permuted CIFAR10", "ResNet", "AdaHAT"]
 
@@ -33,3 +33,6 @@ model:
   adjust_rate: 1e-06
   reg:
     factor: 0.1
+
+trainer:
+  max_epochs: 25

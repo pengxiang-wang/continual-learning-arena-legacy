@@ -25,7 +25,7 @@ class HAT(Finetuning):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -33,7 +33,7 @@ class HAT(Finetuning):
         s_max: float = DEFAULT_SMAX,
         log_train_mask=False,
     ):
-        super().__init__(head, backbone, optimizer, scheduler)
+        super().__init__(heads, backbone, optimizer, scheduler)
 
         # HAT regularisation loss function
         self.reg = reg
@@ -51,7 +51,7 @@ class HAT(Finetuning):
     def forward(self, x: torch.Tensor, task_id: int, scalar: float, stage: str):
         # the forward process propagates input to logits of classes of task_id
         feature, mask = self.backbone(x, scalar, stage)
-        logits = self.head(feature, task_id)
+        logits = self.heads(feature, task_id)
         return logits, mask
 
     def on_train_start(self):

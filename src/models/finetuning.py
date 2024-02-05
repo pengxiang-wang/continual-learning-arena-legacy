@@ -15,7 +15,7 @@ class Finetuning(LightningModule):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -31,7 +31,7 @@ class Finetuning(LightningModule):
 
         # store network module in self beyond self.hparams for convenience
         self.backbone = backbone
-        self.head = head
+        self.heads = heads
 
         # loss function
         self.criterion = nn.CrossEntropyLoss()  # classification loss
@@ -40,15 +40,16 @@ class Finetuning(LightningModule):
     def forward(self, x: torch.Tensor, task_id: int):
         # the forward process propagates input to logits of classes of task_id
         feature = self.backbone(x)
-        logits = self.head(feature, task_id)
+        logits = self.heads(feature, task_id)
         return logits
+
 
     def _model_step(self, batch: Any, task_id: int):
         # common forward step among training, validation, testing step
         x, y = batch
         logits = self.forward(x, task_id)
         loss_cls = self.criterion(logits, y)
-        loss_reg = 0
+        loss_reg = 0.0
         loss_total = loss_cls + loss_reg
         preds = torch.argmax(logits, dim=1)
 

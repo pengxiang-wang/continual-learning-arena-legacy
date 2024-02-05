@@ -29,7 +29,7 @@ def set_task_train(
     
     # add new head
     classes = datamodule.classes(task_id)
-    model.head.new_task(classes)
+    model.heads.new_task(classes)
 
     num_classes = len(classes)
     num_classes_total = [len(datamodule.classes(t)) for t in test_task_id_list]
@@ -135,7 +135,7 @@ def set_test(
         datamodule.task_id = t
         datamodule.setup(stage="test")
         classes = datamodule.classes(t)
-        model.head.new_task(classes)
+        model.heads.new_task(classes)
 
     num_classes_total = [len(datamodule.classes(t)) for t in task_id_list]
 
@@ -184,7 +184,7 @@ def set_predict(
         datamodule.task_id = t
         datamodule.setup(stage="test")
         classes = datamodule.classes(t)
-        model.head.new_task(classes)
+        model.heads.new_task(classes)
         
         
 # def distribute_task_train_val_test_split(

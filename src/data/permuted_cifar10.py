@@ -14,9 +14,9 @@ loggerpack = loggerpack.get_global_loggerpack()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)
-INPUT_LEN = 3 * 32 * 32
-MEAN = (0.5, 0.5, 0.5)
-STD = (0.5, 0.5, 0.5)
+CHANNEL_SIZE = 32 * 32
+MEAN = (0.49139968, 0.48215827 ,0.44653124)
+STD = (0.24703233, 0.24348505, 0.26158768)
 
 DEFAULT_NUM_TASKS = 10
 DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
@@ -25,7 +25,7 @@ DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
 class PermutedCIFAR10(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
 
-    TIL (Task-Incremental Learning) scenario. Must use HeadTIL for your model.
+    TIL (Task-Incremental Learning) scenario. Must use HeadsTIL for your model.
     """
 
     def __init__(
@@ -82,7 +82,7 @@ class PermutedCIFAR10(LightningDataModule):
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation_transform = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        permutation_transform = my_transforms.Permute(num_pixels=CHANNEL_SIZE, seed=perm_seed)
         self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
         
         # target transformations

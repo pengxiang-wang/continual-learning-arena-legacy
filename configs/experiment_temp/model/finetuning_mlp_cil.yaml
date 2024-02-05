@@ -19,6 +19,6 @@ backbone:
   hidden_dims: [256, 100]
   output_dim: 64
 
-head:
-  _target_: src.models.heads.HeadCIL
+heads:
+  _target_: src.models.heads.HeadsCIL
   input_dim: ${model.backbone.output_dim}

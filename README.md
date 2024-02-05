@@ -68,7 +68,7 @@ conda activate myenv
 
 Train continual learning model with default configuration. The default experiment is:
 - Dataset: task-incremental learning, permuted MNIST classification, 10 tasks;
-- Network: MLP network structure, task-incremental head;
+- Network: MLP network structure, task-incremental heads;
 - Algorithm: simply initialise from last tasks (usually refered to as Finetuning or SGD);
 - Metric: test average accuracy and loss over all tasks, at each task's training end.
 
@@ -150,7 +150,7 @@ The core configs are data and model catogeries, that you have to specify:
   - **continual learning approach** hyperparameters;
   - **optimizer** (torch.optim.Optimizer) for each task. Look up at the args docstrings of Optimizer class indicated by \_target\_ in corresponding source code (at [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms) for PyTorch built-ins or [src/models/optimizers/](src/models/backbones/));
   - **backbone** (torch.nn.Module) which shares across tasks extracting features. Look up at the args docstrings of nn.Module class indicated by \_target\_ in corresponding source code (at [src/models/backbones/](src/models/backbones/));
-  - **incremental head** of continual learning model (torch.nn.Module) . It distinguishes whether it is a task-incremental (TIL) or class-incremental (CIL) scenario. Look up at at the args docstrings of nn.Module class indicated by \_target\_ in corresponding source code (at [src/models/heads/](src/models/heads/)).  _Keep in mind that the head must match the dataset module, for example, split MNIST is only for CIL scenario, so you have to use HeadCIL._
+  - **incremental heads** of continual learning model (torch.nn.Module) . It distinguishes whether it is a task-incremental (TIL) or class-incremental (CIL) scenario. Look up at at the args docstrings of nn.Module class indicated by \_target\_ in corresponding source code (at [src/models/heads/](src/models/heads/)).  _Keep in mind that the heads must match the dataset module, for example, split MNIST is only for CIL scenario, so you have to use HeadsCIL._
 
 Other catogeries are less important, that you leave them as defaults:
 - **callbacks** - points to YAML files in [config/callbacks/](config/callbacks): [Callbacks](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html) that passed to Trainer of PyTorch Lightning. Look up at at the args docstrings of Lightning Callback class indicated by \_target\_ in corresponding source code (at [lightning.pytorch.callbacks](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks) for Lightning built-ins or [src/models/callbacks/](src/models/callbacks/)). Callbacks are functions or plugged-in behaviour controllers that applied to training process. For example, [config/callbacks/defaults.yaml](config/callbacks/defaults.yaml) uses several Lightning built-in callbacks for various purposes (Lightning provides a whole bunch of useful callbacks as its key feature, do have a look):
@@ -596,9 +596,9 @@ The directory structure of this project looks like this. All Python codes are lo
 │   ├── models                   <- Model scripts
 │   │   ├── backbones                     <- Backbone scripts
 │   │   │   ├── ...
-│   │   ├── heads                     <- Incremental head scripts
-│   │   │   ├── head_til.py
-│   │   │   └── head_cil.py
+│   │   ├── heads                     <- Incremental heads scripts
+│   │   │   ├── heads_til.py
+│   │   │   └── heads_cil.py
 │   │   ├── optimizers                     <- Optimizers (customised) scripts   
 │   │   │   ├── ...
 │   │   ├── criteria                     <- criteria (loss functions or regularisers, customised) scripts   
@@ -691,9 +691,9 @@ Backbone is a neural network extracting features before propogated into incremen
 
 Backbones are defined in [src/model/backbones/](src/model/backbones/). You can write them in the same way that torch.nn.Module does.
 
-Incremental head is the output module of continual learning. When new task arrives, it append new linear output heads for every class of new task. There are only two kind of incremental heads predefined in [src/model/heads/](src/model/heads/):
-- **HeadTIL**: for task incremental scenario. It outputs the logits of the classes of the given task only. Heads of different tasks are independent. 
-- **HeadCIL**: for class incremental scenario. It outputs the logits of the classes of all of seen tasks.  
+Incremental heads are the output module of continual learning. When new task arrives, it append new linear output heads for every class of new task. There are only two kind of incremental heads predefined in [src/model/heads/](src/model/heads/):
+- **HeadsTIL**: for task incremental scenario. It outputs the logits of the classes of the given task only. Heads of different tasks are independent. 
+- **HeadsCIL**: for class incremental scenario. It outputs the logits of the classes of all of seen tasks.  
 
 
 ### Write Continual Learning Approaches
@@ -707,7 +707,7 @@ class Finetuning(LightningModule):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -723,7 +723,7 @@ class Finetuning(LightningModule):
 
         # store network module in self beyond self.hparams for convenience
         self.backbone = backbone
-        self.head = head
+        self.heads = heads
 
         # loss function
         self.criterion = nn.CrossEntropyLoss()  # classification loss
@@ -732,7 +732,7 @@ class Finetuning(LightningModule):
     def forward(self, x: torch.Tensor, task_id: int):
         # the forward process propagates input to logits of classes of task_id
         feature = self.backbone(x)
-        logits = self.head(feature, task_id)
+        logits = self.heads(feature, task_id)
         return logits
 
     def _model_step(self, batch: Any, task_id: int):

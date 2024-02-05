@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 
-class HeadTIL(nn.Module):
+class HeadsTIL(nn.Module):
     def __init__(
         self,
         input_dim: int = 64,
@@ -25,4 +25,4 @@ class HeadTIL(nn.Module):
 
 
 if __name__ == "__main__":
-    _ = HeadTIL(input_dim=64)
+    _ = HeadsTIL(input_dim=64)
