@@ -15,14 +15,13 @@ class DistillReg(nn.Module):
 
         self.temp = temp
         self.loss_fn = nn.CrossEntropyLoss()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
 
 
     def forward(self, y_student, y_teacher):
         
-        y_student_soften = self.softmax(y_student / self.temp, dim=1)
+        y_student_soften = self.softmax(y_student / self.temp)
         
-        y_teacher_soften = self.softmax(y_teacher / self.temp, dim=1)
+        y_teacher_soften = self.softmax(y_teacher / self.temp)
         
         return self.loss_fn(y_student_soften, y_teacher_soften)
-        
