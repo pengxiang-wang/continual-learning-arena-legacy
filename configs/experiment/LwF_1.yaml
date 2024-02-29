@@ -2,7 +2,7 @@
 
 defaults:
   - override /data: til_permuted_mnist.yaml
-  - override /model: finetuning_mlp_til.yaml
+  - override /model: lwf_mlp_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
   - override /trainer: default.yaml
@@ -10,9 +10,9 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "Finetuning_1"
+experiment_name: "LwF_1"
 
-tags: ["TIL", "Permuted MNIST", "MLP", "Finetuning"]
+tags: ["TIL", "Permuted MNIST", "MLP", "LwF"]
 
 seed: 12345
 

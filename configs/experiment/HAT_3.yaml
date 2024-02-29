@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - override /data: til_permuted_mnist.yaml
-  - override /model: finetuning_mlp_til.yaml
+  - override /data: til_permuted_cifar10.yaml
+  - override /model: hat_resnet_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
   - override /trainer: default.yaml
@@ -10,12 +10,11 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "Finetuning_1"
+experiment_name: "HAT_3"
 
-tags: ["TIL", "Permuted MNIST", "MLP", "Finetuning"]
+tags: ["TIL", "Permuted CIFAR10", "ResNet", "HAT"]
 
 seed: 12345
-
 
 # major settings overwrite here
 # refer to the detailed configs for other settings
@@ -27,11 +26,21 @@ data:
 
 model:
 
+
   backbone:
-    input_dim: 784
-    hidden_dims: [256, 100]
-    output_dim: 64
-    # input_channels: 1
+    _target_: src.models.backbones.MaskedResNet101
+  
+  
+  heads:
+    input_dim: 2048
 
   optimizer: 
     lr: 0.001
+
+  s_max: 400.0
+  reg:
+    factor: 0.1
+
+
+trainer:
+  max_epochs: 25

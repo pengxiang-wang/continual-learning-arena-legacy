@@ -25,7 +25,7 @@ DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
 class PermutedOmniglot(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
 
-    TIL (Task-Incremental Learning) scenario. Must use HeadTIL for your model.
+    TIL (Task-Incremental Learning) scenario. Must use HeadsTIL for your model.
     """
 
     def __init__(

@@ -25,7 +25,7 @@ class HATCompareLoss(HATNonUnion):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -34,7 +34,7 @@ class HATCompareLoss(HATNonUnion):
         log_train_mask=False,
     ):
         super().__init__(
-            head, backbone, optimizer, scheduler, reg, s_max, log_train_mask
+            heads, backbone, optimizer, scheduler, reg, s_max, log_train_mask
         )
 
     def forward(
@@ -47,7 +47,7 @@ class HATCompareLoss(HATNonUnion):
     ):
         # the forward process propagates input to logits of classes of task_id
         feature, mask = self.backbone(x, scalar, stage, additional_mask)
-        logits = self.head(feature, task_id)
+        logits = self.heads(feature, task_id)
         return logits, mask
 
     def training_step(self, batch: Any, batch_idx: int):

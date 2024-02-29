@@ -25,7 +25,7 @@ class HATSimilarityGuided(HATNonUnion):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -34,12 +34,12 @@ class HATSimilarityGuided(HATNonUnion):
         log_train_mask=False,
     ):
         super().__init__(
-            head, backbone, optimizer, scheduler, reg, s_max, log_train_mask
+            heads, backbone, optimizer, scheduler, reg, s_max, log_train_mask
         )
 
     def sim_batch(self, batch, task_id):
         # task_id to compare
-        # try to train in task_id direction (forward head using task_id)
+        # try to train in task_id direction (forward heads using task_id)
 
         # compute loss in
         pass

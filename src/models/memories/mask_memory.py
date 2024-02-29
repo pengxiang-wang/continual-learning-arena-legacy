@@ -18,7 +18,7 @@ class MaskMemory:
 
         self.approach = approach
 
-        # stores
+        # stores masks
         self.masks = {}
         self.masks[0] = self.empty_mask(backbone)  # init for mask sparse multi reg
 
@@ -39,7 +39,8 @@ class MaskMemory:
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
         for module_name, embedding in backbone.te.items():
-            mask[module_name] = torch.zeros_like(embedding.weight)
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            mask[module_name] = torch.zeros_like(embedding.weight).to(device)
 
         return mask
 

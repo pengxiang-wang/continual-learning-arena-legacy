@@ -1,4 +1,5 @@
 from .finetuning import Finetuning
+from .lwf import LwF
 from .hat import HAT
 from .adahat import AdaHAT
 from .hat_non_union import HATNonUnion

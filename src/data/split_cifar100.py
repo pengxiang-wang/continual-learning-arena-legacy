@@ -35,7 +35,7 @@ DEFAULT_CLASS_SPLIT = [
 class SplitCIFAR100(LightningDataModule):
     """LightningDataModule for Split MNIST dataset.
 
-    CIL (Class-Incremental) scenario or TIL (Task-Incremental) scenario. You can use HeadTIL or HeadCIL for your model.
+    CIL (Class-Incremental) scenario or TIL (Task-Incremental) scenario. You can use HeadsTIL or HeadsCIL for your model.
     """
 
     def __init__(

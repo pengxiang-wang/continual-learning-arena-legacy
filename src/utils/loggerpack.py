@@ -293,7 +293,7 @@ class LoggerPack:
 
         for module_name, m in mask.items():
             fig = plt.figure()
-            plt.imshow(m.detach(), aspect=10, cmap="Greys")
+            plt.imshow(m.detach().cpu(), aspect=10, cmap="Greys")
             plt.colorbar()
 
             mask_fig_path = os.path.join(
@@ -306,7 +306,7 @@ class LoggerPack:
 
         for module_name, m in previous_mask.items():
             fig = plt.figure()
-            plt.imshow(m.detach(), aspect=10, cmap="Greys")
+            plt.imshow(m.detach().cpu(), aspect=10, cmap="Greys")
             plt.colorbar()
 
             mask_fig_path = os.path.join(

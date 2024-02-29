@@ -87,7 +87,8 @@ class MaskedResNet(nn.Module):
         m = m.view(1, -1, 1, 1)
         h = m * h
 
-        h = self.bn1(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn1(h)
         a = self.relu(h)
         a = self.maxpool(a)
 
@@ -202,7 +203,8 @@ class MaskedBasicBlockSmall(nn.Module):
         mask_record[f"{self.prefix}conv1"] = m
         m = m.view(1,-1,1,1)
         h = m * h
-        h = self.bn1(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn1(h)
         a = self.relu(h)
 
         h = self.conv2(a)
@@ -214,7 +216,9 @@ class MaskedBasicBlockSmall(nn.Module):
         mask_record[f"{self.prefix}conv2"] = m
         m = m.view(1,-1,1,1)
         h = m * h
-        h = self.bn2(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn2(h)
+        
 
         if self.identity_downsample is not None:
             identity = self.identity_downsample(identity)
@@ -278,7 +282,9 @@ class MaskedBasicBlockLarge(nn.Module):
         mask_record[f"{self.prefix}conv1"] = m
         m = m.view(1,-1,1,1)
         h = m * h
-        h = self.bn1(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn1(h)
+        
         a = self.relu(h)
 
         h = self.conv2(a)
@@ -290,7 +296,8 @@ class MaskedBasicBlockLarge(nn.Module):
         mask_record[f"{self.prefix}conv2"] = m
         m = m.view(1,-1,1,1)
         h = m * h
-        h = self.bn2(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn2(h)
         a = self.relu(h)
 
         h = self.conv3(a)
@@ -302,7 +309,8 @@ class MaskedBasicBlockLarge(nn.Module):
         mask_record[f"{self.prefix}conv3"] = m
         m = m.view(1,-1,1,1)
         h = m * h
-        h = self.bn3(h)
+        if stage == "train":  # problem! don't apply batchnorm at test stage
+            h = self.bn3(h)
 
         if self.identity_downsample is not None:
             identity = self.identity_downsample(identity)

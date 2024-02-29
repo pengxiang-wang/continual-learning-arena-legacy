@@ -14,9 +14,9 @@ loggerpack = loggerpack.get_global_loggerpack()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)
-INPUT_LEN = 3 * 32 * 32
-MEAN = (0.5, 0.5, 0.5)
-STD = (0.5, 0.5, 0.5)
+CHANNEL_SIZE = 32 * 32
+MEAN = (0.49139968, 0.48215827 ,0.44653124)
+STD = (0.24703233, 0.24348505, 0.26158768)
 
 DEFAULT_NUM_TASKS = 10
 DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
@@ -25,7 +25,7 @@ DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
 class PermutedCIFAR10(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
 
-    TIL (Task-Incremental Learning) scenario. Must use HeadTIL for your model.
+    TIL (Task-Incremental Learning) scenario. Must use HeadsTIL for your model.
     """
 
     def __init__(
@@ -51,6 +51,7 @@ class PermutedCIFAR10(LightningDataModule):
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
+        self.data_test_orig: Dict[int, Optional[Dataset]] = {}
         self.data_test: Dict[int, Optional[Dataset]] = {}
 
         # self maintained task_id counter
@@ -81,7 +82,7 @@ class PermutedCIFAR10(LightningDataModule):
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation_transform = my_transforms.Permute(num_pixels=INPUT_LEN, seed=perm_seed)
+        permutation_transform = my_transforms.Permute(num_pixels=CHANNEL_SIZE, seed=perm_seed)
         self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
         
         # target transformations
@@ -101,6 +102,14 @@ class PermutedCIFAR10(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
+            self.data_test_orig[self.task_id] = OrigDataset(
+                self.data_dir,
+                train=False,
+                transform=self.base_transforms[self.task_id],
+                target_transform=one_hot_index,
+                download=False,
+            )
+            
             self.data_test[self.task_id] = OrigDataset(
                 self.data_dir,
                 train=False,

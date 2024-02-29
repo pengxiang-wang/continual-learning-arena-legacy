@@ -24,7 +24,7 @@ class HATNonUnion(HAT):
 
     def __init__(
         self,
-        head: torch.nn.Module,
+        heads: torch.nn.Module,
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
@@ -33,7 +33,7 @@ class HATNonUnion(HAT):
         log_train_mask=False,
     ):
         super().__init__(
-            head, backbone, optimizer, scheduler, reg, s_max, log_train_mask
+            heads, backbone, optimizer, scheduler, reg, s_max, log_train_mask
         )
 
     def training_step(self, batch: Any, batch_idx: int):
