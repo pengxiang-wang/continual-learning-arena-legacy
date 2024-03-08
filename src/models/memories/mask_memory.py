@@ -14,18 +14,18 @@ class MaskMemory:
 
     def __init__(self, s_max: float, backbone: nn.Module, approach: str):
         self.s_max = s_max
-        self.backbone = backbone
+        self.backbone = backbone # help define the data shape of masks
 
         self.approach = approach
 
         # stores masks
         self.masks = {}
-        self.masks[0] = self.empty_mask(backbone)  # init for mask sparse multi reg
+        self.masks[0] = self.empty_mask()  # init for mask sparse multi reg
 
         # stores cumulated mask of all self.masks.
-        self.union_mask = self.empty_mask(backbone)
+        self.union_mask = self.empty_mask()
         if self.approach == "adahat":
-            self.sum_mask = self.empty_mask(backbone)
+            self.sum_mask = self.empty_mask()
 
     def get_mask(self, task_id: int):
         """Get mask of task_id."""
@@ -35,10 +35,10 @@ class MaskMemory:
         """Get all masks."""
         return self.masks
 
-    def empty_mask(self, backbone):
+    def empty_mask(self):
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
-        for module_name, embedding in backbone.te.items():
+        for module_name, embedding in self.backbone.te.items():
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
             mask[module_name] = torch.zeros_like(embedding.weight).to(device)
 
@@ -53,6 +53,10 @@ class MaskMemory:
     def combine_masks(self, mask1, mask2, operator="unite"):
         """Join two masks by element-wise maximum."""
         mask = {}
+        for m in self.backbone.modules():
+            print(m)
+
+        
         for module_name in mask1.keys():
             if operator == "union":
                 mask[module_name] = torch.max(mask1[module_name], mask2[module_name])

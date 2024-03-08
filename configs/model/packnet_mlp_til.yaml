@@ -1,9 +1,6 @@
-_target_: src.models.LwF
+_target_: src.models.PackNet
 
-reg:
-  _target_: src.models.regs.DistillReg
-  factor: 2
-  temp: 1
+prune_perc: 0.5
 
 optimizer:
   _target_: torch.optim.Adam

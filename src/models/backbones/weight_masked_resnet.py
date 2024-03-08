@@ -4,7 +4,7 @@ from torch import nn
 
 MASK_GATE = nn.Sigmoid()
 
-class MaskedResNet(nn.Module):
+class WeightMaskedResNet(nn.Module):
     def __init__(self, block, layer_nums, input_channels):
         super().__init__()
 
@@ -75,7 +75,7 @@ class MaskedResNet(nn.Module):
         self.test_mask = mask
 
     def forward(self, x, scalar: float, stage: str):
-        mask_record = {} # for mask regularisaion terms
+        mask_record = {}
 
         h = self.conv1(x)
         m = (

@@ -21,7 +21,8 @@ class DistillReg(nn.Module):
     def forward(self, y_student, y_teacher):
         
         y_student_soften = self.softmax(y_student / self.temp)
-        
+        print("y_student_soften", y_student_soften)
+
         y_teacher_soften = self.softmax(y_teacher / self.temp)
-        
-        return self.loss_fn(y_student_soften, y_teacher_soften)
+        print("y_teacher_soften", y_student_soften)
+        return self.factor * self.loss_fn(y_student_soften, y_teacher_soften)

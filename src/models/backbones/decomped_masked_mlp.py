@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 
-class MaskedMLP(nn.Module):
+class DecompedMaskedMLP(nn.Module):
     """Masked MLP for HAT algorithm."""
 
     def __init__(
@@ -28,6 +28,7 @@ class MaskedMLP(nn.Module):
             if l == 0:
                 self.fc.append(nn.Linear(input_dim, hidden_dims[l]))
                 self.te[f"fc{l}"] = nn.Embedding(1, hidden_dims[l])
+                self.fcs.append(nn.Linear())
                 self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
 
             elif l == self.layer_num - 1:
@@ -58,7 +59,7 @@ class MaskedMLP(nn.Module):
         # (batch, 1, width, height) -> (batch, 1*width*height)
         a = x.view(batch_size, -1)
 
-        mask_record = {} # for mask regularisaion terms
+        mask_record = {}
         for l in range(self.layer_num):
             h = self.fc[l](a)
             m = (

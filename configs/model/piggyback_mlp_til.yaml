@@ -1,9 +1,6 @@
-_target_: src.models.LwF
+_target_: src.models.Piggyback
 
-reg:
-  _target_: src.models.regs.DistillReg
-  factor: 2
-  temp: 1
+threshold: 5e-03
 
 optimizer:
   _target_: torch.optim.Adam
@@ -19,7 +16,7 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.MLP
+  _target_: src.models.backbones.WeightMaskedMLP
   input_dim: 784
   hidden_dims: [256, 100]
   output_dim: 64

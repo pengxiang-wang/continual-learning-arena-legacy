@@ -16,10 +16,16 @@ class ModelMemory:
         self.backbones: nn.ModuleList = nn.ModuleList()
         self.heads: nn.ModuleList = nn.ModuleList()
         
+    def get_backbone(self, task_id: int):
+        """d"""
+        return self.backbones[task_id]
+        
     def forward(self, x: torch.Tensor, task_id: int):
         # the forward process propagates input to logits of classes of task_id
-        feature = self.backbones[task_id](x)
-        logits = self.heads(feature, task_id)
+        
+        with torch.no_grad():
+            feature = self.backbones[task_id](x)
+            logits = self.heads(feature, task_id)
         return logits
         
     def update(self, task_id: int, backbone: torch.nn.Module, heads: torch.nn.Module):

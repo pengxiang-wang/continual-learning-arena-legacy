@@ -9,3 +9,5 @@ from .masked_resnet import (
     MaskedResNet101,
     MaskedResNet152,
 )
+
+from .weight_masked_mlp import WeightMaskedMLP
