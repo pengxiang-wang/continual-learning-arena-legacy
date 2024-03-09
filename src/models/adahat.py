@@ -66,7 +66,7 @@ class AdaHAT(HAT):
         self.manual_backward(loss_total)
         previous_mask_sum = self.mask_memory.get_sum_mask()
         maskclipper.soft_clip_te_masked_gradients(
-            self.backbone,
+            self.backbonae,
             previous_mask_sum,
             previous_mask,
             reg,
