@@ -1,13 +1,13 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision.datasets import MNIST as OrigDataset
+from torch.utils.data import DataLoader, Dataset, ConcatDataset, random_split
+from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
-from src.utils import pylogger, loggerpack
+from src.utils import pylogger, loggerpack, task_labeled
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()
@@ -20,7 +20,10 @@ STD = (0.3081,)
 
 DEFAULT_NUM_TASKS = 10
 DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
+    
+    
 
+    
 
 class PermutedMNIST(LightningDataModule):
     """LightningDataModule for Pemuted MNIST dataset.
@@ -33,6 +36,7 @@ class PermutedMNIST(LightningDataModule):
         data_dir: str = "data/",
         scenario: str = "TIL",
         num_tasks: int = DEFAULT_NUM_TASKS,
+        joint: bool = False,
         perm_seeds: List[int] = DEFAULT_PERM_SEEDS,
         val_pc: float = 0.1,
         batch_size: int = 64,
@@ -46,8 +50,10 @@ class PermutedMNIST(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # meta info
+        self.data_class = MNIST if not joint else TaskLabeledMNIST
         self.data_dir = data_dir
         self.scenario = scenario
+        self.joint = joint
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -72,8 +78,8 @@ class PermutedMNIST(LightningDataModule):
 
     def prepare_data(self):
         """Download data if needed."""
-        OrigDataset(self.data_dir, train=True, download=True)
-        OrigDataset(self.data_dir, train=False, download=True)
+        MNIST(root=self.data_dir, train=True, download=True)
+        MNIST(root=self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
@@ -84,34 +90,54 @@ class PermutedMNIST(LightningDataModule):
         perm_seed = self.hparams.perm_seeds[self.task_id]
         permutation_transform = my_transforms.Permute(num_pixels=CHANNEL_SIZE, seed=perm_seed)
         self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
+        transform = transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform])
         
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_before_split = OrigDataset(
+            data_train_before_split = MNIST(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transform,
+                target_transform=one_hot_index,
+                download=False,
+            ) if not self.joint else TaskLabeledMNIST(
+                task_id=self.task_id,
+                root=self.data_dir,
+                train=True,
+                transform=transform,
                 target_transform=one_hot_index,
                 download=False,
             )
-            self.data_train, self.data_val = random_split(
+            data_train, data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
+            print(self.task_id)
+            print(data_train)
+            
+            if (not self.joint) or self.task_id == 0:
+                self.data_train = data_train
+                self.data_val = data_val
+            else: 
+                self.data_train = ConcatDataset([self.data_train, data_train])
+                self.data_val = ConcatDataset([self.data_val, data_val])
+            
+            
+            
         elif stage == "test":
-            self.data_test_orig[self.task_id] = OrigDataset(
-                self.data_dir,
+            self.data_test_orig[self.task_id] = MNIST(
+                root=self.data_dir,
                 train=False,
                 transform=self.base_transforms[self.task_id],
                 target_transform=one_hot_index,
                 download=False,
             )
             
-            self.data_test[self.task_id] = OrigDataset(
-                self.data_dir,
+            self.data_test[self.task_id] = MNIST(
+                root=self.data_dir,
                 train=False,
                 transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
                 target_transform=one_hot_index,
@@ -151,5 +177,33 @@ class PermutedMNIST(LightningDataModule):
         }
 
 
+class TaskLabeledMNIST(MNIST):
+    def __init__(
+        self,
+        task_id: int, 
+        root: str,
+        train: bool = True,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        download: bool = False,
+    ):
+        self.__class__.__name__ = MNIST.__name__
+
+        super().__init__(root, train, transform, target_transform, download)
+        self.task_label = task_id
+        
+        
+    def __getitem__(self, index: int):
+        
+        x, y = super().__getitem__(index)
+        return x, y, self.task_label
+
+
+
 if __name__ == "__main__":
     _ = PermutedMNIST()
+    A = OrigDatasetTaskLabeled('/data',
+                train=False,
+                download=False,task_id=1)
+    print(A[1])
+    

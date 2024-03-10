@@ -16,6 +16,7 @@ class DataMemory:
         
     def get_data(self, task_id: int):
         return self.data[task_id]
+
         
     def update(self, batch: torch.Tensor, task_id: int):
         """Store data from self.task_id."""

@@ -50,9 +50,7 @@ class LwF(Finetuning):
         for previous_task_id in range(self.task_id):
             teachers_old = self.model_memory.forward(x, previous_task_id)
             loss_reg += self.reg(logits, teachers_old) 
-        
-        print(loss_reg)
-        
+                
         loss_total = loss_cls + loss_reg
         preds = torch.argmax(logits, dim=1)
 

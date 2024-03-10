@@ -60,6 +60,10 @@ class Finetuning(LightningModule):
             batch, task_id=self.task_id
         )
 
+        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        
+    def training_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
+
         # update metrics
         self.train_metrics[f"task{self.task_id}/train/loss/cls"](loss_cls)
         self.train_metrics[f"task{self.task_id}/train/loss/reg"](loss_reg)
@@ -85,6 +89,10 @@ class Finetuning(LightningModule):
         loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
+        
+        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+
+    def validation_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
 
         # update metrics
         self.val_metrics[f"task{self.task_id}/val/loss/cls"](loss_cls)
@@ -114,8 +122,10 @@ class Finetuning(LightningModule):
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         loss_cls, _, _, preds, targets = self._model_step(batch, dataloader_idx)
 
-        if dataloader_idx == 1:
-            pass
+        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx)
+        
+    def test_step_follow_up(self, loss_cls, preds, targets, dataloader_idx, batch):
+
         # update metrics
         self.test_metrics["test/loss/cls"][dataloader_idx](loss_cls)
         self.test_metrics["test/acc"][dataloader_idx](preds, targets)

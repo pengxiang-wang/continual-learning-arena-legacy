@@ -58,9 +58,7 @@ class EWC(Finetuning):
             previous_backbone = self.model_memory.get_backbone(previous_task_id)
             fi = self.fisher_information_memory.get_fi(previous_task_id)
             loss_reg += self.reg(self.backbone, previous_backbone, fi)
-        
-        print(loss_reg)
-        
+                
         loss_total = loss_cls + loss_reg
         preds = torch.argmax(logits, dim=1)
 

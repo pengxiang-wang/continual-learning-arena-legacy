@@ -12,6 +12,25 @@ from torchmetrics.classification.accuracy import Accuracy
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 
+def task_labeled(Dataset):
+    class DatasetTaskLabeled(Dataset):
+
+        def __init__(self, task_id: int, *args, **kw):
+            
+            super().__init__(*args, **kw)
+            self.task_label = task_id
+            
+            self.__class__.__name__ = Dataset.__name__
+            
+        def __getitem__(self, index: int):
+            
+            x, y = super().__getitem__(index)
+            return x, y, self.task_label
+
+    return DatasetTaskLabeled
+
+
+
 def set_task_train(
     task_id: int,
     datamodule: LightningDataModule,
