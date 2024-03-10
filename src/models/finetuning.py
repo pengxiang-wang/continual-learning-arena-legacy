@@ -59,7 +59,7 @@ class Finetuning(LightningModule):
         loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
-
+        
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
         
     def training_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):

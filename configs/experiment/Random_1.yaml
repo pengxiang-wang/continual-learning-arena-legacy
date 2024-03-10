@@ -3,8 +3,8 @@
 defaults:
   - override /data: til_permuted_mnist.yaml
   - override /model: random.yaml
-  - override /callbacks: none.yaml
-  - override /logger: many_loggers.yaml
+  - override /callbacks: default_without_early_stopping.yaml
+  - override /logger: csv.yaml
   - override /trainer: default.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
@@ -12,7 +12,7 @@ defaults:
 
 experiment_name: "Random_1"
 
-tags: ["TIL", "Permuted MNIST", "MLP", "Random"]
+tags: ["TIL", "Permuted MNIST", "Random"]
 
 seed: 12345
 
@@ -24,3 +24,7 @@ data:
   batch_size: 128
   num_tasks: 50
   perm_seeds: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49]
+
+trainer:
+  max_epochs: 1
+  min_epochs: 1

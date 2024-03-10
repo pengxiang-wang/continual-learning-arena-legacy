@@ -20,9 +20,8 @@ class LabelMemory:
         
     def get_random_labels(self, task_id: int, num: int):
         
-        idx = random()
         whole_labels = self.get_labels(task_id)
-        labels = whole_labels[idx]
+        labels = torch.stack(random.sample(whole_labels, num), 0)
         return labels
         
         
