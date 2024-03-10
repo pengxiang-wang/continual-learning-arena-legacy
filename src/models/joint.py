@@ -25,6 +25,15 @@ class Joint(Finetuning):
 
 
 
+    def on_train_start(self):
+        for layer in self.backbone.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
+        for head in self.heads.heads:
+            for layer in head.children():
+                if hasattr(layer, 'reset_parameters'):
+                    layer.reset_parameters()            
+            
 
     def _model_step_joint(self, batch: Any):
         # common forward step among training, validation, testing step

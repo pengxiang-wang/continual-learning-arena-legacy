@@ -30,7 +30,10 @@ class Random(LightningModule):
 
 
     def training_step(self, batch: Any, batch_idx: int):
+        pass
+    
 
+    def on_train_batch_end(self, output, batch: Any, batch_idx: int):
         # save 
         self.train_label_memory.update(batch, self.task_id) # for calculating fisher information
         
@@ -82,6 +85,8 @@ class Random(LightningModule):
         probs = None
         return preds, probs
 
+    def configure_optimizers(self):
+        pass
 
 
 

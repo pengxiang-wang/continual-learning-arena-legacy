@@ -25,7 +25,8 @@ class HeadsTIL(nn.Module):
             head = self.heads[task_id]
             logits = head(feature)
         elif isinstance(task_id, torch.Tensor):
-            logits = torch.empty(0, self.output_dim)
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            logits = torch.empty(0, self.output_dim).to(device)
 
             for idx in range(feature.size(0)):
                 f = feature[idx]

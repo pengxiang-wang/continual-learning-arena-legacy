@@ -48,7 +48,8 @@ def set_task_train(
     
     # add new head
     classes = datamodule.classes(task_id)
-    model.heads.new_task(classes)
+    if hasattr(model, "heads"):
+        model.heads.new_task(classes)
 
     num_classes = len(classes)
     num_classes_total = [len(datamodule.classes(t)) for t in test_task_id_list]
@@ -122,6 +123,7 @@ def set_task_train(
 
     # setup callbacks
     if trainer.checkpoint_callback:
+        print(trainer.checkpoint_callback.dirpath)
         trainer.checkpoint_callback.dirpath = os.path.join(
             trainer.checkpoint_callback.dirpath, f"task{task_id}"
         )  # seperate task output directory
