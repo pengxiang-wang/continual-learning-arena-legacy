@@ -36,3 +36,6 @@ model:
 
   optimizer: 
     lr: 0.001
+
+trainer:
+  max_epochs: 1

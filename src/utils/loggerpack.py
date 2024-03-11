@@ -316,6 +316,45 @@ class LoggerPack:
 
             if tensorboard:
                 tensorboard.add_figure(f"test/mask/previous/{module_name}", fig)
+                
+    def log_alpha(
+    self,
+    mask,
+    task_id: int,
+    step: int,
+    every_n_train_steps: int = 50,
+    plot_figure: bool = False,
+    ):
+        if step % every_n_train_steps != 0:
+            return
+        mask_src_dir = os.path.join(self.log_dir, "mask/", "train/", "src/")
+        if not os.path.exists(mask_src_dir):
+            try:
+                os.mkdir(mask_src_dir)
+            except:
+                os.makedirs(mask_src_dir)
+
+        mask_src_path = os.path.join(mask_src_dir, f"task{task_id}_step{step}.pt")
+        torch.save(mask, mask_src_path)
+
+        if plot_figure:
+            for module_name, m in mask.items():
+                fig = plt.figure()
+                plt.imshow(m.detach(), aspect=10, cmap="Greys")
+                plt.colorbar()
+
+                mask_fig_dir = os.path.join(self.log_dir, "mask/", "train/", "fig/")
+                if not os.path.exists(mask_fig_dir):
+                    try:
+                        os.mkdir(mask_fig_dir)
+                    except:
+                        os.makedirs(mask_fig_dir)
+
+                mask_fig_path = os.path.join(
+                    mask_fig_dir, f"{module_name}_task{task_id}_step{step}.png"
+                )
+                plt.savefig(mask_fig_path)        
+        
 
     # def check_lightning_module(log_func: Callable) -> Callable:
     #     """Decorator that checks if a log method in LoggerWrapper is executed within a LightningModule.

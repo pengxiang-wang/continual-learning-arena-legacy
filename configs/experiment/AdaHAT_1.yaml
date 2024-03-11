@@ -33,6 +33,7 @@ model:
     lr: 0.001
 
   s_max: 400.0
-  adjust_rate: 1e-06
+  adjust_strategy: ada
+  alpha: 1e-06
   reg:
     factor: 0.1

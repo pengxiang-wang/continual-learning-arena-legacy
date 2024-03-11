@@ -62,6 +62,9 @@ class Finetuning(LightningModule):
         
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
         
+        # return loss or backpropagation will fail
+        return loss_total
+        
     def training_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
 
         # update metrics
@@ -73,8 +76,7 @@ class Finetuning(LightningModule):
         # log_metrics
         loggerpack.log_train_metrics(self, self.train_metrics)
 
-        # return loss or backpropagation will fail
-        return loss_total
+
 
     def on_val_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -90,7 +92,7 @@ class Finetuning(LightningModule):
             batch, task_id=self.task_id
         )
         
-        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
     def validation_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
 
@@ -122,7 +124,7 @@ class Finetuning(LightningModule):
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         loss_cls, _, _, preds, targets = self._model_step(batch, dataloader_idx)
 
-        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx)
+        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)
         
     def test_step_follow_up(self, loss_cls, preds, targets, dataloader_idx, batch):
 

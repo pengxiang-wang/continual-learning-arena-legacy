@@ -3,8 +3,8 @@ _target_: src.models.Finetuning
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.001
-  weight_decay: 0.0
+  lr: 0.003
+  weight_decay: 0.00001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -14,8 +14,10 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.ResNet50
+  _target_: src.models.backbones.AlexNet
   input_channels: 3
+  size: 32
+
 
 heads:
   _target_: src.models.heads.HeadsTIL

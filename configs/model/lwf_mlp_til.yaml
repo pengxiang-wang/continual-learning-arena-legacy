@@ -2,7 +2,7 @@ _target_: src.models.LwF
 
 reg:
   _target_: src.models.regs.DistillReg
-  factor: 2
+  factor: 0.1
   temp: 1
 
 optimizer:

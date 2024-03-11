@@ -31,7 +31,8 @@ class AdaHAT(HAT):
         scheduler: torch.optim.lr_scheduler,
         reg: torch.nn.Module,
         s_max: float = DEFAULT_SMAX,
-        adjust_rate: float = 1e-06,
+        adjust_strategy: str = "ada",
+        alpha: float = 1e-06,
         log_train_mask=False,
     ):
         super().__init__(
@@ -65,32 +66,29 @@ class AdaHAT(HAT):
         # backward step
         self.manual_backward(loss_total)
         previous_mask_sum = self.mask_memory.get_sum_mask()
-        maskclipper.soft_clip_te_masked_gradients(
-            self.backbonae,
+        
+        
+        adjust = maskclipper.soft_clip_te_masked_gradients(
+            self.hparams.adjust_strategy,
+            self.backbone,
             previous_mask_sum,
             previous_mask,
             reg,
-            self.hparams.adjust_rate,
+            self.hparams.alpha,
         )
         maskclipper.compensate_te_gradients(
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
         opt.step()
-
-        # update metrics
-        self.train_metrics[f"task{self.task_id}/train/loss/cls"](loss_cls)
-        self.train_metrics[f"task{self.task_id}/train/loss/reg"](loss_reg)
-        self.train_metrics[f"task{self.task_id}/train/loss/total"](loss_total)
-        self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
-
-        # log_metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
-
+        
         # log mask
         if self.log_train_mask:
             loggerpack.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
+
+        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+
 
         # return loss or backpropagation will fail
         return loss_total

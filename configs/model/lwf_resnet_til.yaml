@@ -1,4 +1,9 @@
-_target_: src.models.Finetuning
+_target_: src.models.LwF
+
+reg:
+  _target_: src.models.regs.DistillReg
+  factor: 2
+  temp: 1
 
 optimizer:
   _target_: torch.optim.Adam
@@ -14,9 +19,9 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.ResNet50
+  _target_: src.models.backbones.ResNet18
   input_channels: 3
 
 heads:
   _target_: src.models.heads.HeadsTIL
-  input_dim: 2048
+  input_dim: 512
