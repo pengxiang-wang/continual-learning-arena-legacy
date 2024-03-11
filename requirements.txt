@@ -11,6 +11,7 @@ hydra-optuna-sweeper==1.2.0
 
 # --------- loggers --------- #
 matplotlib
+pandas # for processing results in csv format
 # wandb
 # neptune-client
 # mlflow
