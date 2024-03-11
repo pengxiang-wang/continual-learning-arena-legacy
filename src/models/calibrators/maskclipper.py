@@ -15,7 +15,7 @@ def hard_clip_te_masked_gradients(backbone: nn.Module, union_mask):
 
 
 def soft_clip_te_masked_gradients(
-    adjust_strategy: str, backbone: nn.Module, sum_mask, union_mask, mask_sparse_loss, alpha
+    adjust_strategy: str, backbone: nn.Module, task_id: int, sum_mask, union_mask, mask_sparse_loss, alpha
 ):
     """fix te from previous mask by soft clip their gradients according to masked links."""
     for module_name, module in backbone.named_modules():
@@ -26,7 +26,7 @@ def soft_clip_te_masked_gradients(
             view_shape = [1 for i in range(module.weight.grad.data.dim())]
             view_shape[0] = -1
 
-            if adjust_strategy == "original":
+            if adjust_strategy == "ada_prob":
                 if random.random() < (1 - mask_sparse_loss[module_name]):
                     # print(mask_sparse_loss)
                     r = alpha # / (0.1 + mask_sparse_loss[module_name])
@@ -37,24 +37,64 @@ def soft_clip_te_masked_gradients(
                 else:
                     adjust = 1 - union_mask[module_name].view(*view_shape)
                     
+                    
             elif adjust_strategy == "ada":
                     r = alpha / (0.1 + mask_sparse_loss[module_name])
                     adjust = torch.div(
                         r, (sum_mask[module_name].view(*view_shape) + r)
                     )
+                    
+            elif adjust_strategy == "ada_ave":
+                r = alpha / (0.1 + mask_sparse_loss[module_name])
+                if task_id == 0:
+                    adjust = 1
+                else:
+                    adjust = torch.div(
+                        r, (sum_mask[module_name].view(*view_shape) / task_id + r)
+                    )
+                        
+            elif adjust_strategy == "ada_ave_prob":
+                if random.random() < (1 - mask_sparse_loss[module_name]):
+                    # print(mask_sparse_loss)
+                    r = alpha # / (0.1 + mask_sparse_loss[module_name])
+                    # print(adjust.size())
+                    if task_id == 0:
+                        adjust = 1
+                    else:
+                        adjust = torch.div(
+                        r, (sum_mask[module_name].view(*view_shape) / task_id + r)
+                        )
+                else:
+                    adjust = 1 - union_mask[module_name].view(*view_shape)
 
-            elif adjust_strategy == "ada_no_sum":
+
+            elif adjust_strategy == "ada_sum_1":
                     r = alpha / (0.1 + mask_sparse_loss[module_name])
                     adjust = torch.div(
                         r, (1 + r)
                     )
                     
-            elif adjust_strategy == "ada_no_reg":
+            elif adjust_strategy == "ada_reg_1":
                     r = alpha / (0.1 + 1)
                     adjust = torch.div(
                         r, (sum_mask[module_name].view(*view_shape) + r)
                     )
                     
+            elif adjust_strategy == "ada_sum_t":
+                r = alpha / (0.1 + mask_sparse_loss[module_name])
+                adjust = torch.div(
+                    r, (task_id + r)
+                )
+                
+            elif adjust_strategy == "ada_reg_05":
+                r = alpha / (0.1 + 0)
+                adjust = torch.div(
+                    r, (sum_mask[module_name].view(*view_shape) + r)
+                )
+                            
+
+                
+                        
             elif adjust_strategy == "random":
                 adjust = random.random()
                 

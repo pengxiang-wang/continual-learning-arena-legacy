@@ -23,7 +23,7 @@ model:
     input_channels: 1
 
 trainer:
-  max_epochs: 10
+  max_epochs: 2
 
 
 

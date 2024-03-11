@@ -19,7 +19,7 @@ tags: ["TIL", "Permuted MNIST", "MLP", "HAT non union"]
 seed: 12345
 
 trainer:
-  max_epochs: 10
+  max_epochs: 2
 
 data:
   num_tasks: 20

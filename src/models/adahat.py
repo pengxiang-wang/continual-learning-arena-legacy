@@ -71,6 +71,7 @@ class AdaHAT(HAT):
         adjust = maskclipper.soft_clip_te_masked_gradients(
             self.hparams.adjust_strategy,
             self.backbone,
+            self.task_id,
             previous_mask_sum,
             previous_mask,
             reg,

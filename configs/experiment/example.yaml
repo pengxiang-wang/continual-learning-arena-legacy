@@ -19,8 +19,8 @@ tags: ["example", "TIL", "Permuted MNIST", "MLP", "Finetuning"]
 seed: 12345
 
 trainer:
-  min_epochs: 10
-  max_epochs: 10
+  min_epochs: 2
+  max_epochs: 2
   gradient_clip_val: 0.5
 
 model:
