@@ -2,7 +2,7 @@
 
 defaults:
   - override /data: til_permuted_cifar10.yaml
-  - override /model: hat_resnet_til.yaml
+  - override /model: hat_mlp_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
   - override /trainer: default.yaml
@@ -25,6 +25,8 @@ data:
   perm_seeds: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49]
 
 model:
+  backbone: 
+    input_dim: 3072
 
   optimizer: 
     lr: 0.001
@@ -35,4 +37,4 @@ model:
 
 
 trainer:
-  max_epochs: 25
+  max_epochs: 35

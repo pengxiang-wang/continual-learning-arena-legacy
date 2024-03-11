@@ -91,21 +91,16 @@ class HAT(Finetuning):
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
         opt.step()
-
-        # update metrics
-        self.train_metrics[f"task{self.task_id}/train/loss/cls"](loss_cls)
-        self.train_metrics[f"task{self.task_id}/train/loss/reg"](loss_reg)
-        self.train_metrics[f"task{self.task_id}/train/loss/total"](loss_total)
-        self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
-
-        # log metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
-
+        
         # log mask
         if self.log_train_mask:
             loggerpack.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
+
+        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+
+        
 
         # return loss or backpropagation will fail
         return loss_total
@@ -126,14 +121,8 @@ class HAT(Finetuning):
         preds = torch.argmax(logits, dim=1)
         targets = y
 
-        # update metrics
-        self.val_metrics[f"task{self.task_id}/val/loss/cls"](loss_cls)
-        self.val_metrics[f"task{self.task_id}/val/loss/reg"](loss_reg)
-        self.val_metrics[f"task{self.task_id}/val/loss/total"](loss_total)
-        self.val_metrics[f"task{self.task_id}/val/acc"](preds, targets)
+        self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
-        # log metrics
-        loggerpack.log_val_metrics(self, self.val_metrics)
 
     def on_test_start(self):
         # log test mask
@@ -154,16 +143,8 @@ class HAT(Finetuning):
         preds = torch.argmax(logits, dim=1)
         targets = y
 
-        # update metrics
-        self.test_metrics["test/loss/cls"][dataloader_idx](loss_cls)
-        self.test_metrics["test/acc"][dataloader_idx](preds, targets)
 
-        # log metrics
-        loggerpack.log_test_metrics_progress_bar(
-            self, self.test_metrics, dataloader_idx
-        )
-
-        loggerpack.log_test_samples(batch, preds, targets, dataloader_idx)
+        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)  
 
 
 if __name__ == "__main__":

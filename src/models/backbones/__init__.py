@@ -1,4 +1,5 @@
 from .mlp import MLP
+from .alexnet import AlexNet
 from .resnet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
 
 from .masked_mlp import MaskedMLP

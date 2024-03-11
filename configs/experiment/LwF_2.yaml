@@ -2,7 +2,7 @@
 
 defaults:
   - override /data: til_permuted_cifar10.yaml
-  - override /model: finetuning_mlp_til.yaml
+  - override /model: lwf_resnet_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
   - override /trainer: default.yaml
@@ -10,11 +10,12 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "Finetuning_2"
+experiment_name: "LwF_2"
 
-tags: ["TIL", "Permuted CIFAR10", "AlexNet", "Finetuning"]
+tags: ["TIL", "Permuted CIFAR10", "ResNet", "LwF"]
 
 seed: 12345
+
 
 # major settings overwrite here
 # refer to the detailed configs for other settings
@@ -26,12 +27,10 @@ data:
 
 
 model:
-  backbone: 
-    input_dim: 3072
 
   optimizer: 
-    lr: 0.01
-    weight_decay: 0.00001
+    lr: 0.001
+    weight_decay: 0.001
 
 trainer:
-  max_epochs: 35
+  max_epochs: 25

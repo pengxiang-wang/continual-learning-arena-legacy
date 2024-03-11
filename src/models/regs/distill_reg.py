@@ -1,5 +1,5 @@
 from torch import nn
-
+import torch
 
 class DistillReg(nn.Module):
     """The distillation regularisation.
@@ -14,12 +14,24 @@ class DistillReg(nn.Module):
         self.factor = factor  # regularisation factor
 
         self.temp = temp
-        self.loss_fn = nn.CrossEntropyLoss()
-        self.softmax = nn.Softmax(dim=1)
 
 
     def forward(self, y_student, y_teacher):
         
-        y_student_soften = self.softmax(y_student / self.temp)
-        y_teacher_soften = self.softmax(y_teacher / self.temp)
-        return self.factor * self.loss_fn(y_student_soften, y_teacher_soften)
+        y_student = nn.functional.softmax(y_student)
+        y_teacher = nn.functional.softmax(y_teacher)
+        
+
+        y_student = y_student.pow(1/self.temp)
+        y_teacher = y_teacher.pow(1/self.temp)
+
+        y_student = y_student / torch.sum(y_student)
+        y_teacher = y_teacher / torch.sum(y_teacher)
+        
+        y_teacher = y_teacher + 1e-5 / y_teacher.size(1)
+        y_teacher = y_teacher / torch.sum(y_teacher)
+        
+        ce = - torch.sum(y_student * y_teacher.log()) # don't use nn.CrossEntropy, it contains Softmax
+
+
+        return self.factor * ce

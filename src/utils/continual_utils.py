@@ -122,9 +122,7 @@ def set_task_train(
     model.test_metrics_overall = test_metrics_overall
 
     # setup callbacks
-    print("traner",trainer.checkpoint_callback.dirpath)
     if trainer.checkpoint_callback:
-        print(trainer.checkpoint_callback.dirpath)
         trainer.checkpoint_callback.dirpath = os.path.join(
             trainer.checkpoint_callback.dirpath, f"task{task_id}"
         )  # seperate task output directory
