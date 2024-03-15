@@ -16,6 +16,10 @@ class DataMemory:
         
     def get_data(self, task_id: int):
         return self.data[task_id]
+    
+    def release(self, task_id):
+        for t in task_id:
+            self.data[t] = []
 
         
     def update(self, batch: torch.Tensor, task_id: int):

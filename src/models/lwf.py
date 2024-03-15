@@ -37,7 +37,7 @@ class LwF(Finetuning):
         
 
     def on_train_end(self):
-        self.model_memory.update(task_id=self.task_id, backbone=self.backbone, heads=self.heads)
+        self.model_memory.update(task_id=self.task_id, backbone=self.backbone,heads=self.heads)
 
 
     def _model_step(self, batch: Any, task_id: int):
@@ -46,10 +46,19 @@ class LwF(Finetuning):
         logits = self.forward(x, task_id)
         loss_cls = self.criterion(logits, y)
         
+        
+
+        
         loss_reg = 0.0
         for previous_task_id in range(self.task_id):
-            teachers_old = self.model_memory.forward(x, previous_task_id)
-            loss_reg += self.reg(logits, teachers_old) 
+            
+            logits_old = self.forward(x, previous_task_id)
+            previous_backbone = self.model_memory.get_backbone(previous_task_id)
+            teachers_old_feature = previous_backbone(x)
+            teachers_old = self.model_memory.heads(teachers_old_feature, previous_task_id)
+            
+            loss_reg += self.reg(logits_old, teachers_old) 
+        # loss_reg /= self.task_id 
                 
         loss_total = loss_cls + loss_reg
         preds = torch.argmax(logits, dim=1)

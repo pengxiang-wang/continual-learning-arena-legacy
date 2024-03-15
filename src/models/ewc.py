@@ -42,7 +42,7 @@ class EWC(Finetuning):
         self.model_memory.update(task_id=self.task_id, backbone=self.backbone, heads=self.heads)
         training_data = self.training_data_memory.get_data(self.task_id)
         self.fisher_information_memory.update(task_id=self.task_id, model=self, criterion=self.criterion, training_data=training_data)
-
+        self.training_data_memory.release(range(self.task_id+1))
 
     def _model_step(self, batch: Any, task_id: int):
         # common forward step among training, validation, testing step

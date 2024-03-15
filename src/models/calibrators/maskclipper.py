@@ -74,32 +74,46 @@ def soft_clip_te_masked_gradients(
                         r, (1 + r)
                     )
                     
-            elif adjust_strategy == "ada_reg_1":
-                    r = alpha / (0.1 + 1)
-                    adjust = torch.div(
-                        r, (sum_mask[module_name].view(*view_shape) + r)
-                    )
-                    
             elif adjust_strategy == "ada_sum_t":
                 r = alpha / (0.1 + mask_sparse_loss[module_name])
                 adjust = torch.div(
                     r, (task_id + r)
                 )
                 
-            elif adjust_strategy == "ada_reg_05":
-                r = alpha / (0.1 + 0)
+            elif adjust_strategy == "ada_reg_1":
+                r = alpha / (0.1 + 1)
                 adjust = torch.div(
                     r, (sum_mask[module_name].view(*view_shape) + r)
                 )
                             
+                            
+            elif adjust_strategy == "ada_reg_09":
+                r = alpha
+                adjust = torch.div(
+                    r, (sum_mask[module_name].view(*view_shape) + r)
+                )
 
                 
+            elif adjust_strategy == "ada_reg_0":
+                r = alpha / (0.1 + 0)
+                adjust = torch.div(
+                    r, (sum_mask[module_name].view(*view_shape) + r)
+                )
+                
+            elif adjust_strategy == "ada_random":
+                adjust = random.random() * (1 - union_mask[module_name].view(*view_shape))
                         
-            elif adjust_strategy == "random":
+            elif adjust_strategy == "ada_random_all":
                 adjust = random.random()
                 
-            elif adjust_strategy == "constant":
+            elif adjust_strategy == "ada_cons_alpha_all":
                 adjust = alpha
+                
+            elif adjust_strategy == "ada_cons_alpha":
+                adjust = alpha * (1 - union_mask[module_name].view(*view_shape))
+                            
+            elif adjust_strategy == "ada_cons_1":
+                adjust = 1
                 
             else:
                 adjust = None
