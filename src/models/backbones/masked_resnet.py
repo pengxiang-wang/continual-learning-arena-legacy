@@ -4,6 +4,7 @@ from torch import nn
 
 MASK_GATE = nn.Sigmoid()
 
+
 class MaskedResNet(nn.Module):
     def __init__(self, block, layer_nums, input_channels):
         super().__init__()
@@ -75,7 +76,7 @@ class MaskedResNet(nn.Module):
         self.test_mask = mask
 
     def forward(self, x, scalar: float, stage: str):
-        mask_record = {} # for mask regularisaion terms
+        mask_record = {}  # for mask regularisaion terms
 
         h = self.conv1(x)
         m = (
@@ -100,7 +101,6 @@ class MaskedResNet(nn.Module):
             a = block(a, scalar, stage, mask_record, self.test_mask)
         for block in self.conv5_x:
             a = block(a, scalar, stage, mask_record, self.test_mask)
-            
 
         a = self.avgpool(a)
         a = a.reshape(a.shape[0], -1)
@@ -190,7 +190,7 @@ class MaskedBasicBlockSmall(nn.Module):
 
     def mask(self, task_embedding: nn.Embedding, scalar: float):
         return self.mask_gate(torch.tensor(scalar) * task_embedding.weight)
-    
+
     def forward(self, x, scalar: float, stage: str, mask_record, test_mask):
         identity = x
 
@@ -201,7 +201,7 @@ class MaskedBasicBlockSmall(nn.Module):
             else test_mask[f"{self.prefix}conv1"]
         )
         mask_record[f"{self.prefix}conv1"] = m
-        m = m.view(1,-1,1,1)
+        m = m.view(1, -1, 1, 1)
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn1(h)
@@ -214,11 +214,10 @@ class MaskedBasicBlockSmall(nn.Module):
             else test_mask[f"{self.prefix}conv2"]
         )
         mask_record[f"{self.prefix}conv2"] = m
-        m = m.view(1,-1,1,1)
+        m = m.view(1, -1, 1, 1)
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn2(h)
-        
 
         if self.identity_downsample is not None:
             identity = self.identity_downsample(identity)
@@ -226,6 +225,7 @@ class MaskedBasicBlockSmall(nn.Module):
 
         a = self.relu(h)
         return a
+
 
 class MaskedBasicBlockLarge(nn.Module):
     """Basic residual block for ResNet50, ResNet101, ResNet152."""
@@ -266,7 +266,7 @@ class MaskedBasicBlockLarge(nn.Module):
         self.bn3 = nn.BatchNorm2d(out_channels * expansion)
         self.relu = nn.ReLU()
         self.identity_downsample = identity_downsample
-    
+
     def mask(self, task_embedding: nn.Embedding, scalar: float):
         return self.mask_gate(torch.tensor(scalar) * task_embedding.weight)
 
@@ -280,11 +280,11 @@ class MaskedBasicBlockLarge(nn.Module):
             else test_mask[f"{self.prefix}conv1"]
         )
         mask_record[f"{self.prefix}conv1"] = m
-        m = m.view(1,-1,1,1)
+        m = m.view(1, -1, 1, 1)
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn1(h)
-        
+
         a = self.relu(h)
 
         h = self.conv2(a)
@@ -294,7 +294,7 @@ class MaskedBasicBlockLarge(nn.Module):
             else test_mask[f"{self.prefix}conv2"]
         )
         mask_record[f"{self.prefix}conv2"] = m
-        m = m.view(1,-1,1,1)
+        m = m.view(1, -1, 1, 1)
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn2(h)
@@ -307,7 +307,7 @@ class MaskedBasicBlockLarge(nn.Module):
             else test_mask[f"{self.prefix}conv3"]
         )
         mask_record[f"{self.prefix}conv3"] = m
-        m = m.view(1,-1,1,1)
+        m = m.view(1, -1, 1, 1)
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn3(h)

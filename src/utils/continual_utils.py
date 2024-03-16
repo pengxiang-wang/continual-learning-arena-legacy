@@ -16,19 +16,18 @@ def task_labeled(Dataset):
     class DatasetTaskLabeled(Dataset):
 
         def __init__(self, task_id: int, *args, **kw):
-            
+
             super().__init__(*args, **kw)
             self.task_label = task_id
-            
+
             self.__class__.__name__ = Dataset.__name__
-            
+
         def __getitem__(self, index: int):
-            
+
             x, y = super().__getitem__(index)
             return x, y, self.task_label
 
     return DatasetTaskLabeled
-
 
 
 def set_task_train(
@@ -45,7 +44,7 @@ def set_task_train(
     trainer.task_id = task_id
 
     test_task_id_list = range(task_id + 1)
-    
+
     # add new head
     classes = datamodule.classes(task_id)
     if hasattr(model, "heads"):
@@ -141,7 +140,7 @@ def set_test(
     ckpt_path,
 ):
     """Set data and model lightning modules to test task.
-    
+
     Args:
         task_id_list (List[int]): List of task ids to be tested.
     """
@@ -160,7 +159,7 @@ def set_test(
     num_classes_total = [len(datamodule.classes(t)) for t in task_id_list]
 
     # setup metrics
-    # test metrics (across task)    
+    # test metrics (across task)
     model.test_loss_cls = nn.ModuleList([MeanMetric() for _ in task_id_list])
     model.test_acc = nn.ModuleList(
         [
@@ -189,11 +188,11 @@ def set_predict(
     ckpt_path,
 ):
     """Set data and model lightning modules to test task.
-    
+
     Args:
         task_id_list (List[int]): List of task ids to be tested.
     """
-    model.eval() # manually set eval mode because predict.py doesn't use Lightning predicting APIs.
+    model.eval()  # manually set eval mode because predict.py doesn't use Lightning predicting APIs.
 
     model.task_id = torch.load(ckpt_path)["task_id"]
     num_tasks_ckpt = model.task_id + 1
@@ -205,8 +204,8 @@ def set_predict(
         datamodule.setup(stage="test")
         classes = datamodule.classes(t)
         model.heads.new_task(classes)
-        
-        
+
+
 # def distribute_task_train_val_test_split(
 #     train_val_test_split: Tuple[int, int, int], num_data: int, num_data_task: int
 # ):

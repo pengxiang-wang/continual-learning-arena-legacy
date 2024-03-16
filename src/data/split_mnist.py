@@ -59,7 +59,6 @@ class SplitMNIST(LightningDataModule):
         self.base_transforms = {}
         self.normalize_transform = transforms.Normalize(MEAN, STD)
 
-
     @property
     def num_tasks(self) -> int:
         return len(self.class_split)
@@ -94,7 +93,9 @@ class SplitMNIST(LightningDataModule):
             data_train_full_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [self.base_transforms[self.task_id], self.normalize_transform]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -110,7 +111,9 @@ class SplitMNIST(LightningDataModule):
             data_test = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [self.base_transforms[self.task_id], self.normalize_transform]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )

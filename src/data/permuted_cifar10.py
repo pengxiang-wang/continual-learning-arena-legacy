@@ -15,8 +15,8 @@ loggerpack = loggerpack.get_global_loggerpack()
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)
 CHANNEL_SIZE = 32 * 32
-MEAN = (0.49139968, 0.48215827 ,0.44653124)
-STD = (0.24703233, 0.24348505, 0.26158768)
+MEAN = (0.4914, 0.4822, 0.4465)
+STD = (0.247, 0.243, 0.261)
 
 DEFAULT_NUM_TASKS = 10
 DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
@@ -51,16 +51,16 @@ class PermutedCIFAR10(LightningDataModule):
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
-        self.data_test_orig: Dict[int, Optional[Dataset]] = {}
+        # self.data_test_orig: Dict[int, Optional[Dataset]] = {}
         self.data_test: Dict[int, Optional[Dataset]] = {}
 
         # self maintained task_id counter
         self.task_id: Optional[int] = None
 
         # data transformations
-        self.base_transforms = {}
+        self.train_base_transforms = {}
+        self.test_base_transforms = {}
         self.normalize_transform = transforms.Normalize(MEAN, STD)
-
 
     @property
     def num_tasks(self) -> int:
@@ -82,9 +82,29 @@ class PermutedCIFAR10(LightningDataModule):
         """
         # data transformations
         perm_seed = self.hparams.perm_seeds[self.task_id]
-        permutation_transform = my_transforms.Permute(num_pixels=CHANNEL_SIZE, seed=perm_seed)
-        self.base_transforms[self.task_id] = transforms.Compose([transforms.ToTensor(), permutation_transform])
-        
+        permutation_transform = my_transforms.Permute(
+            num_pixels=CHANNEL_SIZE, seed=perm_seed
+        )
+        self.train_base_transforms[self.task_id] = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomRotation(20),
+                transforms.ColorJitter(brightness = 0.1,contrast = 0.1,saturation = 0.1),
+                transforms.RandomAdjustSharpness(sharpness_factor = 2,p = 0.2),
+                            transforms.ToTensor(),
+                permutation_transform,
+            ]
+        )
+        self.test_base_transforms[self.task_id] = transforms.Compose(
+            [
+                # transforms.RandomHorizontalFlip(p=0.5),
+                # transforms.RandomRotation(20),
+                # transforms.ColorJitter(brightness = 0.1,contrast = 0.1,saturation = 0.1),
+                # transforms.RandomAdjustSharpness(sharpness_factor = 2,p = 0.2),
+                            transforms.ToTensor(),
+                permutation_transform,
+            ]
+        )
         # target transformations
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
@@ -92,7 +112,9 @@ class PermutedCIFAR10(LightningDataModule):
             data_train_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [self.train_base_transforms[self.task_id], self.normalize_transform, transforms.RandomErasing(p=0.75,scale=(0.02, 0.1),value=1.0, inplace=False)]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -102,18 +124,20 @@ class PermutedCIFAR10(LightningDataModule):
                 generator=torch.Generator().manual_seed(42),
             )
         elif stage == "test":
-            self.data_test_orig[self.task_id] = OrigDataset(
-                self.data_dir,
-                train=False,
-                transform=self.base_transforms[self.task_id],
-                target_transform=one_hot_index,
-                download=False,
-            )
-            
+            # self.data_test_orig[self.task_id] = OrigDataset(
+            #     self.data_dir,
+            #     train=False,
+            #     transform=self.test_base_transforms[self.task_id],
+            #     target_transform=one_hot_index,
+            #     download=False,
+            # )
+
             self.data_test[self.task_id] = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [self.test_base_transforms[self.task_id], self.normalize_transform]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )

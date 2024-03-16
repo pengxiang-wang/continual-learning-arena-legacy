@@ -1,10 +1,7 @@
 from torch import nn
 
 
-
 # 换成torchvision里面的跑跑看
-
-
 
 
 class ResNet(nn.Module):

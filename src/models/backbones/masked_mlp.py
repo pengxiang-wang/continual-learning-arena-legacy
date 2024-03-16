@@ -44,6 +44,8 @@ class MaskedMLP(nn.Module):
 
         self.test_mask = None
 
+        self.module_order = [f"fc{l}" for l in range(self.layer_num)]
+
     def mask(self, task_embedding: nn.Embedding, scalar: float):
         return self.mask_gate(torch.tensor(scalar) * task_embedding.weight)
 
@@ -58,7 +60,7 @@ class MaskedMLP(nn.Module):
         # (batch, 1, width, height) -> (batch, 1*width*height)
         a = x.view(batch_size, -1)
 
-        mask_record = {} # for mask regularisaion terms
+        mask_record = {}  # for mask regularisaion terms
         for l in range(self.layer_num):
             h = self.fc[l](a)
             m = (

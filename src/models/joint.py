@@ -13,7 +13,6 @@ loggerpack = loggerpack.get_global_loggerpack()
 class Joint(Finetuning):
     """LightningModule for joint training continual learning."""
 
-
     def __init__(
         self,
         heads: torch.nn.Module,
@@ -23,17 +22,14 @@ class Joint(Finetuning):
     ):
         super().__init__(heads, backbone, optimizer, scheduler)
 
-
-
     def on_train_start(self):
         for layer in self.backbone.children():
-            if hasattr(layer, 'reset_parameters'):
+            if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
         for head in self.heads.heads:
             for layer in head.children():
-                if hasattr(layer, 'reset_parameters'):
-                    layer.reset_parameters()            
-            
+                if hasattr(layer, "reset_parameters"):
+                    layer.reset_parameters()
 
     def _model_step_joint(self, batch: Any):
         # common forward step among training, validation, testing step
@@ -54,19 +50,15 @@ class Joint(Finetuning):
         # return loss or backpropagation will fail
         return loss_total
 
-
     def validation_step(self, batch: Any, batch_idx: int):
         loss_cls, loss_reg, loss_total, preds, targets = self._model_step_joint(batch)
 
         self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
-
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         loss_cls, _, _, preds, targets = self._model_step(batch, dataloader_idx)
 
         self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)
-
-
 
 
 if __name__ == "__main__":

@@ -20,23 +20,23 @@ class HeadsTIL(nn.Module):
         self.heads.append(nn.Linear(self.input_dim, self.output_dim))
 
     def forward(self, feature: torch.Tensor, task_id: int):
-        
+
         if isinstance(task_id, int):
             head = self.heads[task_id]
             logits = head(feature)
         elif isinstance(task_id, torch.Tensor):
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             logits = torch.empty(0, self.output_dim).to(device)
 
             for idx in range(feature.size(0)):
                 f = feature[idx]
                 t = task_id[idx]
                 head = self.heads[t]
-                logit = head(f).reshape(1,-1)
+                logit = head(f).reshape(1, -1)
                 logits = torch.cat((logits, logit))
         else:
             logits = None
-            
+
         return logits
 
 

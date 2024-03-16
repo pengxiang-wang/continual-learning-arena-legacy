@@ -23,7 +23,7 @@ class MaskSparseReg(nn.Module):
             m = mask[module_name]
             m_ref = mask_ref[module_name]
             m_ref_reverse = 1 - m_ref
-        
+
             reg1_l = (m * m_ref_reverse).sum()
             reg1_total += reg1_l
             count1_l = m_ref_reverse.sum()

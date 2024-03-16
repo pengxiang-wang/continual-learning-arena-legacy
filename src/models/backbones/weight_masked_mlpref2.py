@@ -15,7 +15,6 @@ class WeightMaskedMLP(nn.Module):
     ):
         super().__init__()
 
-
         self.fc = nn.ModuleList()
         self.bn = nn.ModuleList()
         self.activation = nn.ModuleList()
@@ -36,7 +35,7 @@ class WeightMaskedMLP(nn.Module):
         self.params = {}
 
         self.mask = {}
-        for n,p in self.named_parameters():
+        for n, p in self.named_parameters():
             self.mask[n] = torch.ones_like(p.data)
             # print(type(self.mask[n]))
 
@@ -46,22 +45,21 @@ class WeightMaskedMLP(nn.Module):
         """Set task mask before testing task."""
         self.test_mask = mask
 
-
     def forward(self, x, stage):
         batch_size, channels, width, height = x.size()
-        
-        for n,p in self.named_parameters():
+
+        for n, p in self.named_parameters():
             print(type(p))
             # self.params[n] = deepco
             # py(p).requires_grad_()
             if n == "fc.0.weight":
-                print("p.data",p.data)
+                print("p.data", p.data)
             # print(p.data)
             p = self.params[n] * (self.mask[n] if stage == "fit" else self.test_mask[n])
             # print(p.data)
-        print("param",self.params["fc.0.weight"])
+        print("param", self.params["fc.0.weight"])
         # print(self.mask["fc.0.weight"])
-        
+
         # (batch, 1, width, height) -> (batch, 1*width*height)
         a = x.view(batch_size, -1)
 
@@ -73,7 +71,7 @@ class WeightMaskedMLP(nn.Module):
         return a
 
     def take_off_mask(self):
-        for n,p in self.named_parameters():
+        for n, p in self.named_parameters():
             p.data = self.params[n]
 
 

@@ -22,10 +22,10 @@ class PackNet(Finetuning):
 
     def __init__(
         self,
-        heads: torch.nn.Module, 
-        backbone: torch.nn.Module, 
-        optimizer: torch.optim.Optimizer, 
-        scheduler: torch.optim.lr_scheduler, 
+        heads: torch.nn.Module,
+        backbone: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        scheduler: torch.optim.lr_scheduler,
         prune_perc: float,
     ):
         super().__init__(heads, backbone, optimizer, scheduler)
@@ -34,11 +34,10 @@ class PackNet(Finetuning):
 
         # Memory store mask of each task
         self.weight_mask_memory = WeightMaskMemory(backbone=backbone)
-        
+
         # manual optimization
         self.automatic_optimization = False
 
-    
     def training_step(self, batch: Any, batch_idx: int):
         x, y = batch
         opt = self.optimizers()
@@ -51,8 +50,10 @@ class PackNet(Finetuning):
 
         # backward step
         self.manual_backward(loss_total)
-        weightmaskclipper.hard_clip_weight_masked_gradients(self.backbone, self.weight_mask_memory.get_union_mask())
-        
+        weightmaskclipper.hard_clip_weight_masked_gradients(
+            self.backbone, self.weight_mask_memory.get_union_mask()
+        )
+
         opt.step()
 
         # update metrics
@@ -66,18 +67,23 @@ class PackNet(Finetuning):
 
         # return loss or backpropagation will fail
         return loss_total
-    
+
     def on_train_end(self):
-        
+
         # select and prun
-        current_mask = weightmaskclipper.prune(self.backbone,self.weight_mask_memory.get_union_mask(), self.task_id, self.prune_perc)
+        current_mask = weightmaskclipper.prune(
+            self.backbone,
+            self.weight_mask_memory.get_union_mask(),
+            self.task_id,
+            self.prune_perc,
+        )
         self.weight_mask_memory.update(current_mask)
-        
+
         # retrain
-        
-        #for epoch in smaller_epochs:
+
+        # for epoch in smaller_epochs:
         #    self.backbone. only forwardsuse
-        
+
 
 if __name__ == "__main__":
     _ = PackNet(None, None, None, None, None)

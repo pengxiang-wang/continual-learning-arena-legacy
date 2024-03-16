@@ -46,18 +46,18 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
-    assert cfg.ckpt_path # checkpoint path must be provided
-    
+    assert cfg.ckpt_path  # checkpoint path must be provided
+
     # prepare loggers
     log.info("Instantiating loggers...")
     lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(
         cfg.get("logger")
     )
-    
+
     loggerpack: LoggerPack = LoggerPack(
         loggers=lightning_loggers, log_dir=cfg.paths.output_dir
-    ) # loggers all in one pack
-    # make loggerpack available across all modules. There must be only one loggerpack instance. 
+    )  # loggers all in one pack
+    # make loggerpack available across all modules. There must be only one loggerpack instance.
     # after globalising, use `utils.get_global_loggerpack()` in other modules.
     utils.globalise_loggerpack(loggerpack)
 
@@ -67,15 +67,10 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
-
     log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = utils.instantiate_callbacks(
-        cfg.get("callbacks")
-    )
+    callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
     callbacks.extend([ContinualCheckpoint()])
-    
-    
-    
+
     # trainer for evaluation
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(
@@ -93,47 +88,62 @@ def predict(cfg: DictConfig) -> Tuple[dict, dict]:
     if lightning_loggers:
         log.info("Logging hyperparameters!")
         loggerpack.log_hyperparameters(object_dict=object_dict)
-        
+
     utils.continual_utils.set_predict(
         model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path
     )
-    
+
     log.info("Ready for predicting!")
-    input_source = input("Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n")
+    input_source = input(
+        "Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n"
+    )
     while input_source != "q":
-        
+
         # get ready for data and labels
         task_id = int(input("Which task is your input from? Task ID: "))
         if input_source == "1":
-            test_set_t = datamodule.data_test_orig[task_id] # get test data of task ID
-            img_idx = [int(idx) for idx in input("Which images? Index (allow multiple): ").split(" ")] # input image indices
-            imgs, batch, targets = utils.read_dataset_images(test_set_t, img_idx=img_idx, normalize_transform=datamodule.normalize_transform)
+            test_set_t = datamodule.data_test_orig[task_id]  # get test data of task ID
+            img_idx = [
+                int(idx)
+                for idx in input("Which images? Index (allow multiple): ").split(" ")
+            ]  # input image indices
+            imgs, batch, targets = utils.read_dataset_images(
+                test_set_t,
+                img_idx=img_idx,
+                normalize_transform=datamodule.normalize_transform,
+            )
 
         elif input_source == "2":
             input_img_path = input("Your image path (allow multiple) or directory: ")
-            imgs, batch = utils.read_image(input_img_path, normalize_transform=datamodule.normalize_transform)
+            imgs, batch = utils.read_image(
+                input_img_path, normalize_transform=datamodule.normalize_transform
+            )
             targets = input("Your image true label: ").split(" ")
 
         # predicting
         preds, probs = model.predict(batch, task_id)
-    
+
         print(batch.size(), task_id)
         # interpreting
         is_interpreting = input("Do you want interpretation? [y/n]\n")
         if is_interpreting == "y":
             print(f"Initialising interpreter for task {task_id}...")
-            interpreter = hydra.utils.instantiate(
-                cfg.interpreter, forward_func=model
+            interpreter = hydra.utils.instantiate(cfg.interpreter, forward_func=model)
+            attrs = interpreter.attribute(
+                batch, targets, additional_forward_args=task_id
             )
-            attrs = interpreter.attribute(batch, targets, additional_forward_args=task_id)
         elif is_interpreting == "n":
-            attrs = None 
-            
+            attrs = None
+
         # visualisation
-        loggerpack.log_predicts(task_id, imgs, preds, probs, targets=targets, attrs=attrs)
-        
-        input_source = input("Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n")
-    
+        loggerpack.log_predicts(
+            task_id, imgs, preds, probs, targets=targets, attrs=attrs
+        )
+
+        input_source = input(
+            "Where are your inputs from? \n1. test dataset (datamodule); \n2. external images; \nq. quit: \n"
+        )
+
     metric_dict = trainer.callback_metrics
 
     return metric_dict, object_dict

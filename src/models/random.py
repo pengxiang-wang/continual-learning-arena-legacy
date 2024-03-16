@@ -27,23 +27,22 @@ class Random(LightningModule):
 
         self.train_label_memory = LabelMemory()
 
-
-
     def training_step(self, batch: Any, batch_idx: int):
         pass
-    
 
     def on_train_batch_end(self, output, batch: Any, batch_idx: int):
-        # save 
-        self.train_label_memory.update(batch, self.task_id) # for calculating fisher information
-        
+        # save
+        self.train_label_memory.update(
+            batch, self.task_id
+        )  # for calculating fisher information
+
         loss_total = 0.0
 
         # return loss or backpropagation will fail
         return loss_total
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
-        
+
         _, targets = batch
         num = len(targets)
         preds = self.train_label_memory.get_random_labels(dataloader_idx, num)
@@ -74,11 +73,11 @@ class Random(LightningModule):
 
     def predict(self, batch: Any, task_id: int):
         """Pure prediction.
-        
+
         Returns:
         preds (Tensor): predicted classes of batch.
-        prods (Tensor): scores of predicted classes of batch.        
-        """        
+        prods (Tensor): scores of predicted classes of batch.
+        """
         _, targets = batch
         num = len(targets)
         preds = self.train_label_memory.get_random_labels(task_id, num)
@@ -87,7 +86,6 @@ class Random(LightningModule):
 
     def configure_optimizers(self):
         pass
-
 
 
 if __name__ == "__main__":

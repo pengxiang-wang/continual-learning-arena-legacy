@@ -7,7 +7,6 @@ from src.models.backbones.functions import Binariser, Ternariser
 from src.models.backbones.layers import WeightMaskedLinear
 
 
-
 class WeightMaskedMLP(nn.Module):
     def __init__(
         self,
@@ -34,25 +33,23 @@ class WeightMaskedMLP(nn.Module):
                 self.bn.append(nn.BatchNorm1d(hidden_dims[l]))
             self.activation.append(nn.ReLU())
 
-                        
-        for n,p in self.named_parameters():
-            print(n,p)
-    
+        for n, p in self.named_parameters():
+            print(n, p)
+
     @property
     def mask(self):
         mask = {}
-        for n,p in self.named_parameters():
-            if "mask_real" in n: 
+        for n, p in self.named_parameters():
+            if "mask_real" in n:
                 mask[n] = p
         return mask
 
     def forward(self, x, stage):
-        
-                                
-        for n,p in self.named_parameters():
+
+        for n, p in self.named_parameters():
             if n == "fc.0.mask_real":
-                print(n,p)
-    
+                print(n, p)
+
         batch_size, channels, width, height = x.size()
 
         # (batch, 1, width, height) -> (batch, 1*width*height)

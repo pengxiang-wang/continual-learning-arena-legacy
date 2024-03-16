@@ -14,7 +14,7 @@ class MaskMemory:
 
     def __init__(self, s_max: float, backbone: nn.Module, approach: str):
         self.s_max = s_max
-        self.backbone = backbone # help define the data shape of masks
+        self.backbone = backbone  # help define the data shape of masks
 
         self.approach = approach
 
@@ -39,13 +39,44 @@ class MaskMemory:
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
         for module_name, embedding in self.backbone.te.items():
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             mask[module_name] = torch.zeros_like(embedding.weight).to(device)
 
         return mask
 
     def get_union_mask(self):
         return self.union_mask
+
+    def get_weight_mask(
+        self, module_name: str, mask_type: str, view_shape, weight_size
+    ):
+
+        mask = (
+            self.union_mask[module_name].view(*view_shape)
+            if mask_type == "union"
+            else self.sum_mask[module_name].view(*view_shape)
+        )
+
+        module_order = self.backbone.module_order
+        upper_module_index = module_order.index(module_name) - 1
+        if upper_module_index != -1:
+            upper_module_name = module_order[upper_module_index]
+            upper_mask = (
+                self.union_mask[upper_module_name]
+                if mask_type == "union"
+                else self.sum_mask[upper_module_name]
+            )
+        else:
+            upper_mask = None
+
+        mask_expand = mask.expand(weight_size)
+        if upper_module_index != -1:
+            upper_mask_expand = upper_mask.expand(weight_size)
+            weight_mask = torch.min(mask_expand, upper_mask_expand)
+        else:
+            weight_mask = mask_expand
+
+        return weight_mask
 
     def get_sum_mask(self):
         return self.sum_mask
@@ -56,7 +87,6 @@ class MaskMemory:
         for m in self.backbone.modules():
             print(m)
 
-        
         for module_name in mask1.keys():
             if operator == "union":
                 mask[module_name] = torch.max(mask1[module_name], mask2[module_name])

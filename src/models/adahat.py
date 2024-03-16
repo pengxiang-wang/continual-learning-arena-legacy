@@ -65,15 +65,12 @@ class AdaHAT(HAT):
 
         # backward step
         self.manual_backward(loss_total)
-        previous_mask_sum = self.mask_memory.get_sum_mask()
-        
-        
-        adjust = maskclipper.soft_clip_te_masked_gradients(
-            self.hparams.adjust_strategy,
+
+        capacity = maskclipper.soft_clip_te_masked_gradients(
             self.backbone,
+            self.hparams.adjust_strategy,
+            self.mask_memory,
             self.task_id,
-            previous_mask_sum,
-            previous_mask,
             reg,
             self.hparams.alpha,
         )
@@ -81,15 +78,20 @@ class AdaHAT(HAT):
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
         opt.step()
-        
+
         # log mask
         if self.log_train_mask:
             loggerpack.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
+        
+        # log capacity
+        loggerpack.log_capacity(
+            capacity, self.task_id, self.global_step
+            )
+        
 
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
-
 
         # return loss or backpropagation will fail
         return loss_total

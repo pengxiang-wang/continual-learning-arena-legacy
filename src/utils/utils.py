@@ -110,4 +110,3 @@ def get_metric_value(metric_dict: dict, metric_name: str) -> float:
     log.info(f"Retrieved metric value! <{metric_name}={metric_value}>")
 
     return metric_value
-

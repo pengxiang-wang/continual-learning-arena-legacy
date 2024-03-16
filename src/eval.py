@@ -46,18 +46,18 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
-    assert cfg.ckpt_path # checkpoint path must be provided
-    
+    assert cfg.ckpt_path  # checkpoint path must be provided
+
     # prepare loggers
     log.info("Instantiating loggers...")
     lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(
         cfg.get("logger")
     )
-    
+
     loggerpack: LoggerPack = LoggerPack(
         loggers=lightning_loggers, log_dir=cfg.paths.output_dir
-    ) # loggers all in one pack
-    # make loggerpack available across all modules. There must be only one loggerpack instance. 
+    )  # loggers all in one pack
+    # make loggerpack available across all modules. There must be only one loggerpack instance.
     # after globalising, use `utils.get_global_loggerpack()` in other modules.
     utils.globalise_loggerpack(loggerpack)
 
@@ -67,13 +67,10 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
-
     log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = utils.instantiate_callbacks(
-        cfg.get("callbacks")
-    )
+    callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
     callbacks.extend([ContinualCheckpoint()])
-    
+
     # trainer for evaluation
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(

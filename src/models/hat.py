@@ -86,21 +86,26 @@ class HAT(Finetuning):
 
         # backward step
         self.manual_backward(loss_total)
-        maskclipper.hard_clip_te_masked_gradients(self.backbone, previous_mask)
+        capacity = maskclipper.hard_clip_te_masked_gradients(
+            self.backbone, self.mask_memory
+        )
         maskclipper.compensate_te_gradients(
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
         opt.step()
-        
+
         # log mask
         if self.log_train_mask:
             loggerpack.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
 
-        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        # log capacity
+        loggerpack.log_capacity(
+            capacity, self.task_id, self.global_step
+            )
 
-        
+        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
         # return loss or backpropagation will fail
         return loss_total
@@ -123,7 +128,6 @@ class HAT(Finetuning):
 
         self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
-
     def on_test_start(self):
         # log test mask
         mask = self.mask_memory.get_mask(self.task_id)
@@ -143,8 +147,7 @@ class HAT(Finetuning):
         preds = torch.argmax(logits, dim=1)
         targets = y
 
-
-        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)  
+        self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)
 
 
 if __name__ == "__main__":

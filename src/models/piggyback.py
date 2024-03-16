@@ -22,35 +22,36 @@ class Piggyback(Finetuning):
 
     def __init__(
         self,
-        heads: torch.nn.Module, 
-        backbone: torch.nn.Module, 
-        optimizer: torch.optim.Optimizer, 
-        scheduler: torch.optim.lr_scheduler, 
-        threshold: float, 
+        heads: torch.nn.Module,
+        backbone: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        scheduler: torch.optim.lr_scheduler,
+        threshold: float,
     ):
         super().__init__(heads, backbone, optimizer, scheduler)
 
-
         # Memory store mask of each task
-        self.weight_mask_memory = WeightMaskMemory(backbone=backbone, datatype="real", threshold=self.hparams.threshold)
-        
+        self.weight_mask_memory = WeightMaskMemory(
+            backbone=backbone, datatype="real", threshold=self.hparams.threshold
+        )
+
         # manual optimization
         self.automatic_optimization = False
-        
+
     def forward(self, x: torch.Tensor, task_id: int, stage: str):
         # the forward process propagates input to logits of classes of task_id
         feature = self.backbone(x, stage)
         logits = self.heads(feature, task_id)
         return logits
-    
+
     def on_train_start(self):
         # for n,p in self.backbone.named_parameters():
-            # nn.init.normal_(self.backbone.mask[n], 0, 1)
+        # nn.init.normal_(self.backbone.mask[n], 0, 1)
         pass
 
     def on_train_end(self):
         self.weight_mask_memory.update(task_id=self.task_id, backbone=self.backbone)
-    
+
     def training_step(self, batch: Any, batch_idx: int):
         x, y = batch
         opt = self.optimizers()
@@ -59,9 +60,9 @@ class Piggyback(Finetuning):
         # forward step training
         logits = self.forward(x, self.task_id, stage="fit")
         loss_cls = self.criterion(logits, y)
-        
+
         loss_reg = 0.0
-        
+
         loss_total = loss_cls + loss_reg
         preds = torch.argmax(logits, dim=1)
         targets = y
@@ -69,11 +70,11 @@ class Piggyback(Finetuning):
         # backward step
         self.manual_backward(loss_total)
         # for n,p in self.backbone.named_parameters():
-            # if n == "fc.0.weight":
-                # print("p.data grad", p.grad)
+        # if n == "fc.0.weight":
+        # print("p.data grad", p.grad)
 
         # print("grad", self.backbone.params["fc.0.weight"].grad)
-        
+
         opt.step()
         # self.backbone.take_off_mask()
 
@@ -88,7 +89,7 @@ class Piggyback(Finetuning):
 
         # return loss or backpropagation will fail
         return loss_total
-    
+
     def validation_step(self, batch: Any, batch_idx: int):
         x, y = batch
 
@@ -110,8 +111,7 @@ class Piggyback(Finetuning):
 
         # log metrics
         loggerpack.log_val_metrics(self, self.val_metrics)
-    
-        
+
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         x, y = batch
 
@@ -133,7 +133,7 @@ class Piggyback(Finetuning):
         )
 
         loggerpack.log_test_samples(batch, preds, targets, dataloader_idx)
-        
-        
+
+
 if __name__ == "__main__":
     _ = Piggyback(None, None, None, None, None)

@@ -1,8 +1,8 @@
-
 from torch import nn
 
 
 DEFAULT_THRESHOLD = 5e-3
+
 
 class Binariser(nn.Module):
     """Binarizes {0, 1} a real valued tensor."""

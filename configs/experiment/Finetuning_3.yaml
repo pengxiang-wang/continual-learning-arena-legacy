@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /data: til_permuted_cifar10.yaml
+  - override /data: til_permuted_cifar100.yaml
   - override /model: finetuning_resnet_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
@@ -10,9 +10,9 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: "Finetuning_2"
+experiment_name: "Finetuning_3"
 
-tags: ["TIL", "Permuted CIFAR10", "ResNet", "Finetuning"]
+tags: ["TIL", "Permuted CIFAR100", "ResNet", "Finetuning"]
 
 seed: 12345
 

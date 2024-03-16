@@ -43,7 +43,6 @@ class Finetuning(LightningModule):
         logits = self.heads(feature, task_id)
         return logits
 
-
     def _model_step(self, batch: Any, task_id: int):
         # common forward step among training, validation, testing step
         x, y = batch
@@ -59,12 +58,12 @@ class Finetuning(LightningModule):
         loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
-        
+
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
-        
+
         # return loss or backpropagation will fail
         return loss_total
-        
+
     def training_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
 
         # update metrics
@@ -75,8 +74,6 @@ class Finetuning(LightningModule):
 
         # log_metrics
         loggerpack.log_train_metrics(self, self.train_metrics)
-
-
 
     def on_val_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -91,7 +88,7 @@ class Finetuning(LightningModule):
         loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
-        
+
         self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
     def validation_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
@@ -125,7 +122,7 @@ class Finetuning(LightningModule):
         loss_cls, _, _, preds, targets = self._model_step(batch, dataloader_idx)
 
         self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)
-        
+
     def test_step_follow_up(self, loss_cls, preds, targets, dataloader_idx, batch):
 
         # update metrics
@@ -156,15 +153,14 @@ class Finetuning(LightningModule):
 
     def predict(self, batch: Any, task_id: int):
         """Pure prediction.
-        
+
         Returns:
         preds (Tensor): predicted classes of batch.
-        prods (Tensor): scores of predicted classes of batch.        
-        """        
+        prods (Tensor): scores of predicted classes of batch.
+        """
         logits = self.forward(batch, task_id)
-        probs, preds = torch.max(logits, dim=1)        
+        probs, preds = torch.max(logits, dim=1)
         return preds, probs
-
 
     def configure_optimizers(self):
         # choose optimizers

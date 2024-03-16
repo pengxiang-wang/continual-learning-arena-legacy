@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
@@ -14,9 +16,9 @@ loggerpack = loggerpack.get_global_loggerpack()
 
 NUM_CLASSES = 100
 INPUT_SIZE = (3, 32, 32)
-INPUT_LEN = 3 * 32 * 32
-MEAN = (0.5, 0.5, 0.5)
-STD = (0.5, 0.5, 0.5)
+CHANNEL_SIZE = 32 * 32
+MEAN = (0.5074, 0.4867,0.4411)
+STD = (0.2011,0.1987,0.2025)
 
 DEFAULT_CLASS_SPLIT = [
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -67,9 +69,7 @@ class SplitCIFAR100(LightningDataModule):
         self.task_id: Optional[int] = None
 
         # data transformations
-        self.base_transforms = {}
         self.normalize_transform = transforms.Normalize(MEAN, STD)
-        
 
     @property
     def num_tasks(self) -> int:
@@ -105,23 +105,39 @@ class SplitCIFAR100(LightningDataModule):
             data_train_full_before_split = OrigDataset(
                 root=self.data_dir,
                 train=True,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomRotation(20),
+                transforms.ColorJitter(brightness = 0.1,contrast = 0.1,saturation = 0.1),
+                transforms.RandomAdjustSharpness(sharpness_factor = 2,p = 0.2),
+                            transforms.ToTensor(),
+                             self.normalize_transform,  transforms.RandomErasing(p=0.75,scale=(0.02, 0.1),value=1.0, inplace=False)]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )
             data_train_before_split = self._get_class_subset(
                 data_train_full_before_split, classes=self.class_split[self.task_id]
             )
+            
+            print(data_train_before_split)
+            
             self.data_train, self.data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
+            print(len(self.data_val))
+
+            
         elif stage == "test":
             data_test = OrigDataset(
                 self.data_dir,
                 train=False,
-                transform=transforms.Compose([self.base_transforms[self.task_id], self.normalize_transform]),
+                transform=transforms.Compose(
+                    [                            transforms.ToTensor(),
+self.normalize_transform]
+                ),
                 target_transform=one_hot_index,
                 download=False,
             )
@@ -144,11 +160,14 @@ class SplitCIFAR100(LightningDataModule):
             nn.Dataset: subset of original dataset in classes.
         """
         # Get from dataset.data and dataset.targets
-        idx = dataset.targets == classes[0]
+        idx = np.array(dataset.targets) == classes[0]
+        print(idx)
+        
         for cls in classes[1:]:
-            idx = (dataset.targets == cls) | idx
+            idx = (np.array(dataset.targets) == cls) | idx
+        print(idx)
         dataset.data = dataset.data[idx]
-        dataset.targets = dataset.targets[idx]
+        dataset.targets = [element for element, select_flag in zip(dataset.targets, idx) if select_flag]
         return dataset
 
     def train_dataloader(self):
@@ -160,6 +179,7 @@ class SplitCIFAR100(LightningDataModule):
             shuffle=True,
             drop_last=True,
         )
+        
 
     def val_dataloader(self):
         return DataLoader(
@@ -170,6 +190,7 @@ class SplitCIFAR100(LightningDataModule):
             shuffle=False,
             drop_last=True,
         )
+
 
     def test_dataloader(self):
         return {

@@ -10,7 +10,7 @@ class Permute:
         seed (int): permutation seed
     """
 
-    def __init__(self, num_pixels: int, seed: int = None): 
+    def __init__(self, num_pixels: int, seed: int = None):
         self.torch_generator = torch.Generator()
         if seed:
             self.torch_generator.manual_seed(seed)
@@ -26,12 +26,12 @@ class Permute:
             torch.Tensor: permuted image.
         """
         input_channels = img.size()[0]
-        #for i in range(input_channels):
+        # for i in range(input_channels):
         i = 0
         orig_size = img[i].size()
         imgi = img[i].view(-1)
         img[i] = imgi[self.idx].view(orig_size)
-    
+
         return img
 
 

@@ -59,10 +59,10 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     loggerpack: LoggerPack = LoggerPack(
         loggers=lightning_loggers, log_dir=cfg.paths.output_dir
-    ) # loggers all in one pack
-    # make loggerpack available across all modules. There must be only one loggerpack instance. 
+    )  # loggers all in one pack
+    # make loggerpack available across all modules. There must be only one loggerpack instance.
     # after globalising, use `utils.get_global_loggerpack()` in other modules.
-    utils.globalise_loggerpack(loggerpack) 
+    utils.globalise_loggerpack(loggerpack)
 
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
@@ -87,11 +87,17 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
             )
             callbacks.extend([ContinualCheckpoint(), ContinualProgressBar()])
 
-            profiler = SimpleProfiler(dirpath=os.path.join(cfg.paths.output_dir, "profilers"), filename=f"task{task_id}")
+            profiler = SimpleProfiler(
+                dirpath=os.path.join(cfg.paths.output_dir, "profilers"),
+                filename=f"task{task_id}",
+            )
 
             log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
             trainer: Trainer = hydra.utils.instantiate(
-                cfg.trainer, callbacks=callbacks, logger=lightning_loggers, profiler=profiler,
+                cfg.trainer,
+                callbacks=callbacks,
+                logger=lightning_loggers,
+                profiler=profiler,
             )
 
             object_dict = {
@@ -131,7 +137,6 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
                     ckpt_path = None
                 log.info(f"Best ckpt path: {ckpt_path}")
                 trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
-                
 
             test_metrics = trainer.callback_metrics
 
