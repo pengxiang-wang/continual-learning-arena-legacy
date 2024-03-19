@@ -34,8 +34,6 @@ model:
   alpha: 1e-6
   reg:
     factor: 0.1
-  gradient_clip_val: 0.0001
-
 
 
 
