@@ -2,7 +2,7 @@
 
 defaults:
   - override /data: til_split_cifar100.yaml
-  - override /model: finetuning_resnet_til.yaml
+  - override /model: finetuning_cnn_til.yaml
   - override /callbacks: default.yaml
   - override /logger: many_loggers.yaml
   - override /trainer: default.yaml

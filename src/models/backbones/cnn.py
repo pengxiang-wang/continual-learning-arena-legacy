@@ -1,21 +1,23 @@
 from torch import nn
 
+import torch
+
 import torch.nn.functional as F
 
 
 class SmallCNN(nn.Module):
-    def __init__(self):
-        super(SmallCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
+    def __init__(self, input_channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
+        self.fc1 = nn.Linear(64 * 8 * 8, 64)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.reshape(x.shape[0], -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = self.pool(torch.relu(self.conv1(x)))
+        x = self.pool(torch.relu(self.conv2(x)))
+        x = self.pool(torch.relu(self.conv3(x)))
+        x = x.view(-1, 64 * 8 * 8)
+        x = torch.relu(self.fc1(x))
         return x
