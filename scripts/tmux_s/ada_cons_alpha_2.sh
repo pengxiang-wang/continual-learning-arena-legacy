@@ -5,5 +5,5 @@
 
 for i in {5..5}
 do
-    python src/train.py trainer=gpu experiment=AdaHAT_2 experiment_name=ada_cons_alpha model.adjust_strategy=ada_cons_alpha seed=$i
+    python src/train.py trainer=gpu experiment=AdaHAT_2 experiment_name=ada_cons_alpha_2 model.adjust_strategy=ada_cons_alpha seed=$i
 done
