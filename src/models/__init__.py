@@ -1,4 +1,5 @@
 from .finetuning import Finetuning
+from .reference import Reference
 from .random import Random
 from .joint import Joint
 from .lwf import LwF

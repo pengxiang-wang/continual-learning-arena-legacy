@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import multiprocessing
+
 # from torchvision.models.resnet18 import ResNet18
 import torchvision.models as models
 
@@ -14,34 +15,58 @@ if mps:
     mps_device = torch.device("gpu")
 
 
-
 def main():
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    transform_train = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    transform_test = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
 
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
+    trainset = torchvision.datasets.CIFAR10(
+        root="./data", train=True, download=True, transform=transform_train
+    )
+    trainloader = torch.utils.data.DataLoader(
+        trainset, batch_size=128, shuffle=True, num_workers=2
+    )
 
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
+    testset = torchvision.datasets.CIFAR10(
+        root="./data", train=False, download=True, transform=transform_test
+    )
+    testloader = torch.utils.data.DataLoader(
+        testset, batch_size=128, shuffle=False, num_workers=2
+    )
 
-    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    classes = (
+        "plane",
+        "car",
+        "bird",
+        "cat",
+        "deer",
+        "dog",
+        "frog",
+        "horse",
+        "ship",
+        "truck",
+    )
 
     class ModifiedResNet18(nn.Module):
         def __init__(self):
             super(ModifiedResNet18, self).__init__()
             self.resnet18 = models.resnet18(weights=None)
             # Modify the first layer to accept CIFAR-10 sized images
-            self.resnet18.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+            self.resnet18.conv1 = nn.Conv2d(
+                3, 64, kernel_size=3, stride=1, padding=1, bias=False
+            )
             # Modify the output layer to have 10 classes instead of 1000
             self.resnet18.fc = nn.Linear(512, 10)
 
@@ -52,7 +77,9 @@ def main():
         def __init__(self, block, layer_nums, input_channels):
             super().__init__()
 
-            self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3)
+            self.conv1 = nn.Conv2d(
+                input_channels, 64, kernel_size=7, stride=2, padding=3
+            )
             self.bn1 = nn.BatchNorm2d(64)
             self.relu = nn.ReLU()
             self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -119,7 +146,13 @@ def main():
             return a
 
         def _make_layer(
-            self, block, num_residual_blocks, expansion, in_channels, out_channels, stride
+            self,
+            block,
+            num_residual_blocks,
+            expansion,
+            in_channels,
+            out_channels,
+            stride,
         ):
             identity_downsample = None
             layers = []
@@ -127,7 +160,10 @@ def main():
             if stride != 1 or in_channels != out_channels * expansion:
                 identity_downsample = nn.Sequential(
                     nn.Conv2d(
-                        in_channels, out_channels * expansion, kernel_size=1, stride=stride
+                        in_channels,
+                        out_channels * expansion,
+                        kernel_size=1,
+                        stride=stride,
                     ),
                     nn.BatchNorm2d(out_channels * expansion),
                 )
@@ -150,12 +186,16 @@ def main():
 
             return nn.Sequential(*layers)
 
-
     class BasicBlockSmall(nn.Module):
         """Basic residual block for ResNet18, ResNet34."""
 
         def __init__(
-            self, in_channels, out_channels, expansion, identity_downsample=None, stride=1
+            self,
+            in_channels,
+            out_channels,
+            expansion,
+            identity_downsample=None,
+            stride=1,
         ):
             super().__init__()
             self.conv1 = nn.Conv2d(
@@ -186,12 +226,16 @@ def main():
             a = self.relu(h)
             return a
 
-
     class BasicBlockLarge(nn.Module):
         """Basic residual block for ResNet50, ResNet101, ResNet152."""
 
         def __init__(
-            self, in_channels, out_channels, expansion, identity_downsample=None, stride=1
+            self,
+            in_channels,
+            out_channels,
+            expansion,
+            identity_downsample=None,
+            stride=1,
         ):
             super().__init__()
             self.conv1 = nn.Conv2d(
@@ -234,26 +278,21 @@ def main():
             a = self.relu(h)
             return a
 
-
     class ResNet18(ResNet):
         def __init__(self, input_channels):
             super().__init__(BasicBlockSmall, [2, 2, 2, 2], input_channels)
-
 
     class ResNet34(ResNet):
         def __init__(self, input_channels):
             super().__init__(BasicBlockSmall, [3, 4, 6, 3], input_channels)
 
-
     class ResNet50(ResNet):
         def __init__(self, input_channels):
             super().__init__(BasicBlockLarge, [3, 4, 6, 3], input_channels)
 
-
     class ResNet101(ResNet):
         def __init__(self, input_channels):
             super().__init__(BasicBlockLarge, [3, 4, 23, 3], input_channels)
-
 
     class ResNet152(ResNet):
         def __init__(self, input_channels):
@@ -269,7 +308,6 @@ def main():
             self.pool2 = nn.AvgPool2d(2, 2)
             self.norm2 = nn.BatchNorm2d(16)
             self.fc1 = nn.Linear(16 * 5 * 5, 10)
-
 
         def forward(self, x):
             x = self.pool1(F.relu(self.conv1(x)))
@@ -287,7 +325,6 @@ def main():
     if mps:
         net = net.to(mps_device)
         criterion = criterion.to(mps_device)
-
 
     for epoch in range(50):
         running_loss = 0.0
@@ -309,15 +346,16 @@ def main():
 
             running_loss += loss.item()
 
-
             _, predicted_train = torch.max(outputs.data, 1)
             total_train += labels.size(0)
             correct_train += (predicted_train == labels).sum().item()
 
         train_accuracy = 100 * correct_train / total_train
-        print('Epoch %d, Training Accuracy: %.2f %%' % (epoch + 1, train_accuracy))
-        print('Epoch %d, Training Loss: %.3f' % (epoch + 1, running_loss / len(trainloader)))
-
+        print("Epoch %d, Training Accuracy: %.2f %%" % (epoch + 1, train_accuracy))
+        print(
+            "Epoch %d, Training Loss: %.3f"
+            % (epoch + 1, running_loss / len(trainloader))
+        )
 
         correct_test = 0
         total_test = 0
@@ -335,9 +373,10 @@ def main():
                 correct_test += (predicted_test == labels).sum().item()
 
         test_accuracy = 100 * correct_test / total_test
-        print('Epoch %d, Testing Accuracy: %.2f %%' % (epoch + 1, test_accuracy))
+        print("Epoch %d, Testing Accuracy: %.2f %%" % (epoch + 1, test_accuracy))
 
-    print('Finished Training')
+    print("Finished Training")
+
 
 if __name__ == "__main__":
     # multiprocessing.freeze_support()

@@ -1,8 +1,6 @@
 from torch import nn
 
 
-# 换成torchvision里面的跑跑看
-
 
 class ResNet(nn.Module):
     def __init__(self, block, layer_nums, input_channels):

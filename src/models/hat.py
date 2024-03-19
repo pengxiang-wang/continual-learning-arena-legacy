@@ -31,6 +31,8 @@ class HAT(Finetuning):
         scheduler: torch.optim.lr_scheduler,
         reg: torch.nn.Module,
         s_max: float = DEFAULT_SMAX,
+        calculate_capacity: bool = False,
+        log_capacity: bool = False,
         log_train_mask=False,
     ):
         super().__init__(heads, backbone, optimizer, scheduler)
@@ -46,6 +48,8 @@ class HAT(Finetuning):
         # manual optimization
         self.automatic_optimization = False
 
+        self.calculate_capacity = calculate_capacity
+        self.log_capacity = log_capacity
         self.log_train_mask = log_train_mask
 
     def forward(self, x: torch.Tensor, task_id: int, scalar: float, stage: str):
@@ -87,11 +91,13 @@ class HAT(Finetuning):
         # backward step
         self.manual_backward(loss_total)
         capacity = maskclipper.hard_clip_te_masked_gradients(
-            self.backbone, self.mask_memory
+            self.backbone, self.mask_memory, self.log_capacity,
         )
         maskclipper.compensate_te_gradients(
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
+
+        # torch.nn.utils.clip_grad_value_(self.parameters(),self.gradient_clip_val)
         opt.step()
 
         # log mask
@@ -101,9 +107,8 @@ class HAT(Finetuning):
             )
 
         # log capacity
-        loggerpack.log_capacity(
-            capacity, self.task_id, self.global_step
-            )
+        if self.log_capacity:
+            loggerpack.log_capacity(capacity, self.task_id, self.global_step)
 
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 

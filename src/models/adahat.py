@@ -33,10 +33,20 @@ class AdaHAT(HAT):
         s_max: float = DEFAULT_SMAX,
         adjust_strategy: str = "ada",
         alpha: float = 1e-06,
+        calculate_capacity: bool = False,
+        log_capacity: bool = False,
         log_train_mask=False,
     ):
         super().__init__(
-            heads, backbone, optimizer, scheduler, reg, s_max, log_train_mask
+            heads,
+            backbone,
+            optimizer,
+            scheduler,
+            reg,
+            s_max,
+            calculate_capacity,
+            log_capacity,
+            log_train_mask,
         )
 
         # Memory store mask of each task
@@ -73,10 +83,12 @@ class AdaHAT(HAT):
             self.task_id,
             reg,
             self.hparams.alpha,
+            self.log_capacity,
         )
         maskclipper.compensate_te_gradients(
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
         )
+        # torch.nn.utils.clip_grad_value_(self.parameters(), self.gradient_clip_val)
         opt.step()
 
         # log mask
@@ -84,12 +96,10 @@ class AdaHAT(HAT):
             loggerpack.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
-        
+
         # log capacity
-        loggerpack.log_capacity(
-            capacity, self.task_id, self.global_step
-            )
-        
+        if self.log_capacity:
+            loggerpack.log_capacity(capacity, self.task_id, self.global_step)
 
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 

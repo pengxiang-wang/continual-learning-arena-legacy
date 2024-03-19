@@ -11,7 +11,7 @@ from torchvision.models import (
 )
 from .cnn import SmallCNN
 from .modifiedresnet import ModifiedResNet18
-from .resnet9 import ResNet9
+from .resnet9_rewrite import ResNet9
 
 from .masked_mlp import MaskedMLP
 from .masked_resnet import (
@@ -21,5 +21,7 @@ from .masked_resnet import (
     MaskedResNet101,
     MaskedResNet152,
 )
+from .masked_resnet9_rewrite import MaskedResNet9
+
 
 from .weight_masked_mlp import WeightMaskedMLP

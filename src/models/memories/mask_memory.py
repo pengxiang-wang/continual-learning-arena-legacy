@@ -39,8 +39,7 @@ class MaskMemory:
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
         for module_name, embedding in self.backbone.te.items():
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            mask[module_name] = torch.zeros_like(embedding.weight).to(device)
+                mask[module_name] = torch.zeros_like(embedding.weight).to("cuda:0")
 
         return mask
 
@@ -50,31 +49,43 @@ class MaskMemory:
     def get_weight_mask(
         self, module_name: str, mask_type: str, view_shape, weight_size
     ):
-
-        mask = (
-            self.union_mask[module_name].view(*view_shape)
-            if mask_type == "union"
-            else self.sum_mask[module_name].view(*view_shape)
-        )
-
-        module_order = self.backbone.module_order
-        upper_module_index = module_order.index(module_name) - 1
-        if upper_module_index != -1:
-            upper_module_name = module_order[upper_module_index]
-            upper_mask = (
-                self.union_mask[upper_module_name]
+        with torch.no_grad():
+            mask = (
+                self.union_mask[module_name].view(*view_shape)
                 if mask_type == "union"
-                else self.sum_mask[upper_module_name]
+                else self.sum_mask[module_name].view(*view_shape)
             )
-        else:
-            upper_mask = None
 
-        mask_expand = mask.expand(weight_size)
-        if upper_module_index != -1:
-            upper_mask_expand = upper_mask.expand(weight_size)
-            weight_mask = torch.min(mask_expand, upper_mask_expand)
-        else:
-            weight_mask = mask_expand
+            module_order = self.backbone.module_order
+            upper_module_index = module_order.index(module_name) - 1
+            
+            
+            upper_module_name = module_order[upper_module_index] if upper_module_index != -1 else None
+            # if upper_module_name == "residual": upper_module_name = None
+                
+            if upper_module_name: 
+                upper_mask = (
+                    self.union_mask[upper_module_name]
+                    if mask_type == "union"
+                    else self.sum_mask[upper_module_name]
+                )
+            else:
+                upper_mask = None
+
+            mask_expand = mask.expand(weight_size)
+            # print("mask",mask.size())
+            if upper_module_name:
+                # print("upper_mask", upper_mask.size())
+                if upper_mask.dim() != len(weight_size):
+                    for i in range(upper_mask.dim(), len(weight_size)):
+                        # print("i")
+                        upper_mask = upper_mask.unsqueeze(-1)
+                # print(upper_mask.size())
+                upper_mask_expand = upper_mask.expand(weight_size)
+                weight_mask = torch.min(mask_expand, upper_mask_expand)
+            else:
+                weight_mask = mask_expand
+                # print("weight_mask", weight_mask.size())            
 
         return weight_mask
 

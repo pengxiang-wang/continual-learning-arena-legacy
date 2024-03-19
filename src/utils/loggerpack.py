@@ -317,13 +317,12 @@ class LoggerPack:
         capacity = float(capacity)
         capacity_path = os.path.join(self.log_dir, "capacity.csv")
         if not os.path.exists(capacity_path):
-            with open(capacity_path, 'w', newline='') as csvfile:
+            with open(capacity_path, "w", newline="") as csvfile:
                 pass
-            
-        with open(capacity_path, 'a+', newline='') as csvfile:
+
+        with open(capacity_path, "a+", newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerow([capacity])
-
 
     # def check_lightning_module(log_func: Callable) -> Callable:
     #     """Decorator that checks if a log method in LoggerWrapper is executed within a LightningModule.

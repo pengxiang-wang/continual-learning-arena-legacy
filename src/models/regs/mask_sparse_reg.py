@@ -8,8 +8,10 @@ class MaskSparseReg(nn.Module):
     https://arxiv.org/abs/1801.01423
     """
 
-    def __init__(self, factor: float):
+    def __init__(self, factor: float, type="old"):
         super().__init__()
+
+        self.type = type
 
         self.factor = factor  # regularisation factor
 
@@ -46,6 +48,9 @@ class MaskSparseReg(nn.Module):
         reg1_total = reg1_total / count1_total if count1_total > 10 else 0
         reg2_total = 1 - reg2_total / count2_total if count2_total > 10 else 1
 
-        reg_total = 0.5 * (reg1_total + reg2_total)
+        if self.type == "new":
+            reg_total = 0.5 * (reg1_total + reg2_total)
+        elif self.type == "old":
+            reg_total = reg1_total
         # print(reg_total)
         return self.factor * reg_total, reg_total, reg

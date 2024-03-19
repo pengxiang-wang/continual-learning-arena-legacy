@@ -67,6 +67,8 @@ class MaskedResNet(nn.Module):
         )
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        
+        
 
     def mask(self, task_embedding: nn.Embedding, scalar: float):
         return self.mask_gate(torch.tensor(scalar) * task_embedding.weight)
@@ -284,7 +286,6 @@ class MaskedBasicBlockLarge(nn.Module):
         h = m * h
         if stage == "train":  # problem! don't apply batchnorm at test stage
             h = self.bn1(h)
-
         a = self.relu(h)
 
         h = self.conv2(a)
@@ -323,7 +324,34 @@ class MaskedBasicBlockLarge(nn.Module):
 class MaskedResNet18(MaskedResNet):
     def __init__(self, input_channels):
         super().__init__(MaskedBasicBlockSmall, [2, 2, 2, 2], input_channels)
-
+        
+        self.module_order = [
+            "conv1",
+            None, 
+            "conv2_x0conv1",
+            "conv2_x0conv2",
+            None, 
+            "conv2_x1conv1",
+            "conv2_x1conv2",
+            None,
+            "conv3_x0conv1",
+            "conv3_x0conv2",
+            None, 
+            "conv3_x1conv1",
+            "conv3_x1conv2",
+            None,
+            "conv4_x0conv1",
+            "conv4_x0conv2",
+            None, 
+            "conv4_x1conv1",
+            "conv4_x1conv2",
+            None,
+            "conv5_x0conv1",
+            "conv5_x0conv2",
+            None, 
+            "conv5_x1conv1",
+            'conv5_x1conv2',
+        ]
 
 class MaskedResNet34(MaskedResNet):
     def __init__(self, input_channels):

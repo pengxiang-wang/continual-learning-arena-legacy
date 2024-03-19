@@ -5,25 +5,28 @@ reg:
   _target_: src.models.regs.MaskSparseReg
   factor: 0.1
 
+calculate_capacity: False
+log_capacity: False
 log_train_mask: False
 
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
   lr: 0.001
-  weight_decay: 0.0
+  weight_decay: 0 #35e-5
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
   _partial_: true
   mode: min
-  factor: 0.1
-  patience: 10
+  factor: 0.3
+  patience: 3
+  threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.MaskedResNet50
+  _target_: src.models.backbones.MaskedResNet9
   input_channels: 3
 
 heads:
   _target_: src.models.heads.HeadsTIL
-  input_dim: 2048
+  input_dim: 512

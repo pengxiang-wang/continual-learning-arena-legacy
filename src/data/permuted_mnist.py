@@ -121,8 +121,6 @@ class PermutedMNIST(LightningDataModule):
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
-            print(self.task_id)
-            print(data_train)
 
             if (not self.joint) or self.task_id == 0:
                 self.data_train = data_train

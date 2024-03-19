@@ -37,3 +37,6 @@ model:
   alpha: 1e-06
   reg:
     factor: 0.1
+
+trainer: 
+  max_epochs: 2

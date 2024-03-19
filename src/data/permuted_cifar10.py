@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision.datasets import CIFAR10 as OrigDataset
+from torch.utils.data import DataLoader, Dataset, ConcatDataset, random_split
+from torchvision.datasets import CIFAR10
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
@@ -23,7 +23,7 @@ DEFAULT_PERM_SEEDS = [s for s in range(DEFAULT_NUM_TASKS)]
 
 
 class PermutedCIFAR10(LightningDataModule):
-    """LightningDataModule for Pemuted MNIST dataset.
+    """LightningDataModule for Pemuted CIFAR10 dataset.
 
     TIL (Task-Incremental Learning) scenario. Must use HeadsTIL for your model.
     """
@@ -33,6 +33,7 @@ class PermutedCIFAR10(LightningDataModule):
         data_dir: str = "data/",
         scenario: str = "TIL",
         num_tasks: int = DEFAULT_NUM_TASKS,
+        joint: bool = False,
         perm_seeds: List[int] = DEFAULT_PERM_SEEDS,
         val_pc: float = 0.1,
         batch_size: int = 64,
@@ -46,12 +47,15 @@ class PermutedCIFAR10(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # meta info
+        self.data_class = CIFAR10 if not joint else TaskLabeledCIFAR10
         self.data_dir = data_dir
         self.scenario = scenario
+        self.joint = joint
+
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
-        # self.data_test_orig: Dict[int, Optional[Dataset]] = {}
+        self.data_test_orig: Dict[int, Optional[Dataset]] = {}
         self.data_test: Dict[int, Optional[Dataset]] = {}
 
         # self maintained task_id counter
@@ -72,8 +76,8 @@ class PermutedCIFAR10(LightningDataModule):
 
     def prepare_data(self):
         """Download data if needed."""
-        OrigDataset(self.data_dir, train=True, download=True)
-        OrigDataset(self.data_dir, train=False, download=True)
+        CIFAR10(self.data_dir, train=True, download=True)
+        CIFAR10(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
@@ -89,9 +93,9 @@ class PermutedCIFAR10(LightningDataModule):
             [
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(20),
-                transforms.ColorJitter(brightness = 0.1,contrast = 0.1,saturation = 0.1),
-                transforms.RandomAdjustSharpness(sharpness_factor = 2,p = 0.2),
-                            transforms.ToTensor(),
+                transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+                transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+                transforms.ToTensor(),
                 permutation_transform,
             ]
         )
@@ -101,7 +105,7 @@ class PermutedCIFAR10(LightningDataModule):
                 # transforms.RandomRotation(20),
                 # transforms.ColorJitter(brightness = 0.1,contrast = 0.1,saturation = 0.1),
                 # transforms.RandomAdjustSharpness(sharpness_factor = 2,p = 0.2),
-                            transforms.ToTensor(),
+                transforms.ToTensor(),
                 permutation_transform,
             ]
         )
@@ -109,30 +113,65 @@ class PermutedCIFAR10(LightningDataModule):
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_before_split = OrigDataset(
+            data_train_before_split = (
+                CIFAR10(
                 root=self.data_dir,
                 train=True,
                 transform=transforms.Compose(
-                    [self.train_base_transforms[self.task_id], self.normalize_transform, transforms.RandomErasing(p=0.75,scale=(0.02, 0.1),value=1.0, inplace=False)]
+                    [
+                        self.train_base_transforms[self.task_id],
+                        self.normalize_transform,
+                        transforms.RandomErasing(
+                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                        ),
+                    ]
                 ),
                 target_transform=one_hot_index,
                 download=False,
+                ) 
+                if not self.joint
+                else TaskLabeledCIFAR10(
+                    task_id=self.task_id,
+                    root=self.data_dir,
+                    train=True,
+                    transform=transforms.Compose(
+                    [
+                        self.train_base_transforms[self.task_id],
+                        self.normalize_transform,
+                        transforms.RandomErasing(
+                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                        ),
+                    ]
+                ),
+                    target_transform=one_hot_index,
+                    download=False,
+                )
             )
-            self.data_train, self.data_val = random_split(
+            data_train, data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
-        elif stage == "test":
-            # self.data_test_orig[self.task_id] = OrigDataset(
-            #     self.data_dir,
-            #     train=False,
-            #     transform=self.test_base_transforms[self.task_id],
-            #     target_transform=one_hot_index,
-            #     download=False,
-            # )
+            
+            
+            if (not self.joint) or self.task_id == 0:
+                self.data_train = data_train
+                self.data_val = data_val
+            else:
+                self.data_train = ConcatDataset([self.data_train, data_train])
+                self.data_val = ConcatDataset([self.data_val, data_val])
 
-            self.data_test[self.task_id] = OrigDataset(
+            
+        elif stage == "test":
+            self.data_test_orig[self.task_id] = CIFAR10(
+                self.data_dir,
+                train=False,
+                transform=self.test_base_transforms[self.task_id],
+                target_transform=one_hot_index,
+                download=False,
+            )
+
+            self.data_test[self.task_id] = CIFAR10(
                 self.data_dir,
                 train=False,
                 transform=transforms.Compose(
@@ -173,6 +212,27 @@ class PermutedCIFAR10(LightningDataModule):
             )
             for task_id, data_test in self.data_test.items()
         }
+        
+    
+class TaskLabeledCIFAR10(CIFAR10):
+    def __init__(
+        self,
+        task_id: int,
+        root: str,
+        train: bool = True,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        download: bool = False,
+    ):
+        self.__class__.__name__ = CIFAR10.__name__
+
+        super().__init__(root, train, transform, target_transform, download)
+        self.task_label = task_id
+
+    def __getitem__(self, index: int):
+
+        x, y = super().__getitem__(index)
+        return x, y, self.task_label
 
 
 if __name__ == "__main__":

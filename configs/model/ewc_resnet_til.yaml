@@ -1,0 +1,27 @@
+_target_: src.models.EWC
+
+reg:
+  _target_: src.models.regs.WeightProximityReg
+  factor: 5000
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 35e-5
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.3
+  patience: 3
+  threshold: 0.09
+
+backbone:
+  _target_: src.models.backbones.ResNet9
+  input_channels: 3
+
+heads:
+  _target_: src.models.heads.HeadsTIL
+  input_dim: 512

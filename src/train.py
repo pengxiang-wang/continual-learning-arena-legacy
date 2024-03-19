@@ -99,6 +99,10 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
                 logger=lightning_loggers,
                 profiler=profiler,
             )
+            
+            # torch.cuda.set_device(trainer.accelerator.devices)  
+
+            
 
             object_dict = {
                 "cfg": cfg,
