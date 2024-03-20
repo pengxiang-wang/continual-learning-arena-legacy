@@ -39,7 +39,7 @@ class MaskMemory:
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
         for module_name, embedding in self.backbone.te.items():
-                mask[module_name] = torch.zeros_like(embedding.weight).to("cuda:1")
+                mask[module_name] = torch.zeros_like(embedding.weight).to("cuda:0")
 
         return mask
 

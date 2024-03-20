@@ -325,38 +325,104 @@ class MaskedResNet18(MaskedResNet):
     def __init__(self, input_channels):
         super().__init__(MaskedBasicBlockSmall, [2, 2, 2, 2], input_channels)
         
+        # self.module_order = [
+        #     "conv1",
+        #     None, 
+        #     "conv2_x0conv1",
+        #     "conv2_x0conv2",
+        #     None, 
+        #     "conv2_x1conv1",
+        #     "conv2_x1conv2",
+        #     None,
+        #     "conv3_x0conv1",
+        #     "conv3_x0conv2",
+        #     None, 
+        #     "conv3_x1conv1",
+        #     "conv3_x1conv2",
+        #     None,
+        #     "conv4_x0conv1",
+        #     "conv4_x0conv2",
+        #     None, 
+        #     "conv4_x1conv1",
+        #     "conv4_x1conv2",
+        #     None,
+        #     "conv5_x0conv1",
+        #     "conv5_x0conv2",
+        #     None, 
+        #     "conv5_x1conv1",
+        #     'conv5_x1conv2',
+        # ]
+
         self.module_order = [
             "conv1",
-            None, 
+            
             "conv2_x0conv1",
             "conv2_x0conv2",
-            None, 
             "conv2_x1conv1",
             "conv2_x1conv2",
-            None,
+            
             "conv3_x0conv1",
             "conv3_x0conv2",
-            None, 
             "conv3_x1conv1",
             "conv3_x1conv2",
-            None,
+            
             "conv4_x0conv1",
             "conv4_x0conv2",
-            None, 
             "conv4_x1conv1",
             "conv4_x1conv2",
-            None,
+            
             "conv5_x0conv1",
             "conv5_x0conv2",
-            None, 
             "conv5_x1conv1",
             'conv5_x1conv2',
         ]
+
 
 class MaskedResNet34(MaskedResNet):
     def __init__(self, input_channels):
         super().__init__(MaskedBasicBlockSmall, [3, 4, 6, 3], input_channels)
 
+
+        self.module_order = [
+            "conv1",
+            
+            "conv2_x0conv1",
+            "conv2_x0conv2",
+            "conv2_x1conv1",
+            "conv2_x1conv2",
+            "conv2_x2conv1",
+            "conv2_x2conv2",
+            
+            "conv3_x0conv1",
+            "conv3_x0conv2",
+            "conv3_x1conv1",
+            "conv3_x1conv2",
+            "conv3_x2conv1",
+            "conv3_x2conv2",
+            "conv3_x3conv1",
+            "conv3_x3conv2",
+            
+            "conv4_x0conv1",
+            "conv4_x0conv2",
+            "conv4_x1conv1",
+            "conv4_x1conv2",
+            "conv4_x2conv1",
+            "conv4_x2conv2",
+            "conv4_x3conv1",
+            "conv4_x3conv2",
+            "conv4_x4conv1",
+            "conv4_x4conv2",
+            "conv4_x5conv1",
+            "conv4_x5conv2",
+            
+            "conv5_x0conv1",
+            "conv5_x0conv2",
+            "conv5_x1conv1",
+            'conv5_x1conv2',
+            "conv5_x2conv1",
+            'conv5_x2conv2',
+            
+        ]
 
 class MaskedResNet50(MaskedResNet):
     def __init__(self, input_channels):
