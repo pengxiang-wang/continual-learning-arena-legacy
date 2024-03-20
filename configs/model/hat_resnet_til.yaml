@@ -24,7 +24,7 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.MaskedResNet18
+  _target_: src.models.backbones.MaskedResNet34
   input_channels: 3
 
 heads:
