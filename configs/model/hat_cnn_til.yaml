@@ -1,10 +1,19 @@
-_target_: src.models.Finetuning
+_target_: src.models.HAT
+
+s_max: 400.0
+reg:
+  _target_: src.models.regs.MaskSparseReg
+  factor: 0.1
+
+calculate_capacity: False
+log_capacity: False
+log_train_mask: False
 
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.01
-  weight_decay: 35e-05
+  lr: 0.001
+  weight_decay: 0 #35e-5
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -15,9 +24,9 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.SmallCNN
+  _target_: src.models.backbones.MaskedSmallCNN
   input_channels: 3
 
 heads:
   _target_: src.models.heads.HeadsTIL
-  input_dim: 64
+  input_dim: 512
