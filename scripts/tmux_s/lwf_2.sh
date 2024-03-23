@@ -5,5 +5,5 @@
 
 for i in {1..10}
 do
-    python src/train.py trainer=gpu experiment=LwF_2 seed=$i
+    python src/train.py trainer=gpu experiment=LwF_2 seed=$i trainer.devices=[1]
 done

@@ -3,7 +3,7 @@ _target_: src.models.HAT
 s_max: 400.0
 reg:
   _target_: src.models.regs.MaskSparseReg
-  factor: 0.1
+  factor: 0.75
 
 calculate_capacity: False
 log_capacity: False

@@ -14,9 +14,11 @@ scheduler:
   patience: 3
   threshold: 0.09
 
+ 
 backbone:
-  _target_: src.models.backbones.ResNet9
+  _target_: src.models.backbones.ResNet18
   input_channels: 3
+  
 
 heads:
   _target_: src.models.heads.HeadsTIL

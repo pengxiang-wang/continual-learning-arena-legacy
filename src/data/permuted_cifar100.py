@@ -125,8 +125,6 @@ class PermutedCIFAR100(LightningDataModule):
                 download=False,
             )
 
-            print(data_train_before_split)
-
             self.data_train, self.data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],

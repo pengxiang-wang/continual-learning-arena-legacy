@@ -95,8 +95,8 @@ class MaskMemory:
     def combine_masks(self, mask1, mask2, operator="unite"):
         """Join two masks by element-wise maximum."""
         mask = {}
-        for m in self.backbone.modules():
-            print(m)
+        # for m in self.backbone.modules():
+        #     print(m)
 
         for module_name in mask1.keys():
             if operator == "union":

@@ -37,7 +37,7 @@ class LwF(Finetuning):
 
     def on_train_end(self):
         self.model_memory.update(
-            task_id=self.task_id, backbone=self.backbone, heads=self.heads
+            backbone=self.backbone, heads=self.heads
         )
 
     def _model_step(self, batch: Any, task_id: int):
@@ -50,7 +50,7 @@ class LwF(Finetuning):
         for previous_task_id in range(self.task_id):
 
             logits_old = self.forward(x, previous_task_id)
-            previous_backbone = self.model_memory.get_backbone(previous_task_id)
+            previous_backbone = self.model_memory.get_backbone()
             teachers_old_feature = previous_backbone(x)
             teachers_old = self.model_memory.heads(
                 teachers_old_feature, previous_task_id

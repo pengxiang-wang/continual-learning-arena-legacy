@@ -34,7 +34,7 @@ model:
 
   s_max: 400.0
   reg:
-    factor: 0.1
+    factor: 0.75
 
 trainer:
   max_epochs: 20

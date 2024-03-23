@@ -3,7 +3,7 @@
 
 # Schedule execution of many runs
 
-for i in {1..10}
+for i in {4..10}
 do
     python src/train.py trainer=gpu trainer.devices=[1] experiment=Joint_1 seed=$i
 done

@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
 
 import numpy as np
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision.datasets import CIFAR100 as OrigDataset
+from torch.utils.data import DataLoader, Dataset, random_split, ConcatDataset
+from torchvision.datasets import CIFAR100
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
@@ -45,6 +45,7 @@ class SplitCIFAR100(LightningDataModule):
         data_dir: str = "data/",
         scenario: str = "CIL",
         class_split: List[List[Any]] = DEFAULT_CLASS_SPLIT,
+        joint: bool = False,
         val_pc: float = 0.1,
         batch_size: int = 64,
         num_workers: int = 0,
@@ -60,6 +61,8 @@ class SplitCIFAR100(LightningDataModule):
         self.data_dir = data_dir
         self.scenario = scenario
         self.class_split = class_split
+        self.joint = joint
+
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -90,8 +93,8 @@ class SplitCIFAR100(LightningDataModule):
 
     def prepare_data(self):
         """Download data if needed."""
-        OrigDataset(self.data_dir, train=True, download=True)
-        OrigDataset(self.data_dir, train=False, download=True)
+        CIFAR100(self.data_dir, train=True, download=True)
+        CIFAR100(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data of self.task_id.
@@ -102,7 +105,7 @@ class SplitCIFAR100(LightningDataModule):
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_full_before_split = OrigDataset(
+            data_train_full_before_split = (CIFAR100(
                 root=self.data_dir,
                 train=True,
                 transform=transforms.Compose(
@@ -123,21 +126,50 @@ class SplitCIFAR100(LightningDataModule):
                 target_transform=one_hot_index,
                 download=False,
             )
+            if not self.joint
+                else TaskLabeledCIFAR100(
+                    task_id=self.task_id,
+                    root=self.data_dir,
+                    train=True,
+                    transform=transforms.Compose(
+                    [
+                        transforms.RandomHorizontalFlip(p=0.5),
+                        transforms.RandomRotation(20),
+                        transforms.ColorJitter(
+                            brightness=0.1, contrast=0.1, saturation=0.1
+                        ),
+                        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+                        transforms.ToTensor(),
+                        self.normalize_transform,
+                        transforms.RandomErasing(
+                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                        ),
+                    ]
+                ),
+                    target_transform=one_hot_index,
+                    download=False,
+            ))
             data_train_before_split = self._get_class_subset(
                 data_train_full_before_split, classes=self.class_split[self.task_id]
             )
 
-            print(data_train_before_split)
 
-            self.data_train, self.data_val = random_split(
+            data_train, data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
-            print(len(self.data_val))
+            
+            if (not self.joint) or self.task_id == 0:
+                self.data_train = data_train
+                self.data_val = data_val
+            else:
+                self.data_train = ConcatDataset([self.data_train, data_train])
+                self.data_val = ConcatDataset([self.data_val, data_val])
+
 
         elif stage == "test":
-            data_test = OrigDataset(
+            data_test = CIFAR100(
                 self.data_dir,
                 train=False,
                 transform=transforms.Compose(
@@ -152,7 +184,7 @@ class SplitCIFAR100(LightningDataModule):
 
     def _get_class_subset(
         self,
-        dataset: OrigDataset,
+        dataset: CIFAR100,
         classes: list[int],
     ) -> Dataset:
         """Get subset of dataset in certain classes, as an implementation for spliting dataset.
@@ -166,11 +198,10 @@ class SplitCIFAR100(LightningDataModule):
         """
         # Get from dataset.data and dataset.targets
         idx = np.array(dataset.targets) == classes[0]
-        print(idx)
 
         for cls in classes[1:]:
             idx = (np.array(dataset.targets) == cls) | idx
-        print(idx)
+
         dataset.data = dataset.data[idx]
         dataset.targets = [
             element for element, select_flag in zip(dataset.targets, idx) if select_flag
@@ -208,6 +239,26 @@ class SplitCIFAR100(LightningDataModule):
             )
             for task_id, data_test in self.data_test.items()
         }
+
+class TaskLabeledCIFAR100(CIFAR100):
+    def __init__(
+        self,
+        task_id: int,
+        root: str,
+        train: bool = True,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        download: bool = False,
+    ):
+        self.__class__.__name__ = CIFAR100.__name__
+
+        super().__init__(root, train, transform, target_transform, download)
+        self.task_label = task_id
+
+    def __getitem__(self, index: int):
+
+        x, y = super().__getitem__(index)
+        return x, y, self.task_label
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ def hard_clip_te_masked_gradients(backbone: nn.Module, mask_memory, log_capacity
                 capacity += torch.sum(adjust_bias)
                 num += torch.sum(torch.ones_like(adjust_bias))
 
-        capacity = capacity / num if log_capacity else None
+    capacity = capacity / num if log_capacity else None
 
     return capacity
 
@@ -132,13 +132,13 @@ def soft_clip_te_masked_gradients(
 
             elif adjust_strategy == "ada_sum_1":
                 r = alpha / (0.1 + mask_sparse_loss[module_name])
-                adjust = torch.div(r, (1 + r))
-                adjust_bias = torch.div(r, (1 + r))
+                adjust = torch.div(r, (1 + r)) * weight_mask + 1 * (1 - weight_mask)
+                adjust_bias = torch.div(r, (1 + r)) * torch.squeeze(union_mask[module_name]) + 1 * (1 - torch.squeeze(union_mask[module_name]))
 
             elif adjust_strategy == "ada_sum_t":
                 r = alpha / (0.1 + mask_sparse_loss[module_name])
-                adjust = torch.div(r, (task_id + r))
-                adjust_bias = torch.div(r, (task_id + r))
+                adjust = torch.div(r, (task_id + r)) * weight_mask + 1 * (1 - weight_mask)
+                adjust_bias = torch.div(r, (task_id + r)) * torch.squeeze(union_mask[module_name]) + 1 * (1 - torch.squeeze(union_mask[module_name]))
 
             elif adjust_strategy == "ada_reg_1":
                 r = alpha / (0.1 + 1)
@@ -162,13 +162,13 @@ def soft_clip_te_masked_gradients(
                 )
 
             elif adjust_strategy == "ada_random":
-                adjust = random.random() * (1 - weight_mask)
-                adjust_bias = random.random() * (
+                adjust = torch.rand_like(weight_mask) * weight_mask + 1 * (1 - weight_mask)
+                adjust_bias = torch.rand_like(torch.squeeze(union_mask[module_name])) * (
                     1 - torch.squeeze(union_mask[module_name])
                 )
 
             elif adjust_strategy == "ada_random_all":
-                adjust = torch.tensor(random.random())
+                adjust = torch.tensor(random.random()) # not true
                 adjust_bias = torch.tensor(random.random())
 
             elif adjust_strategy == "ada_cons_alpha_all":
@@ -176,7 +176,7 @@ def soft_clip_te_masked_gradients(
                 adjust_bias = torch.tensor(alpha)
 
             elif adjust_strategy == "ada_cons_alpha":
-                adjust = alpha * (1 - weight_mask)
+                adjust = alpha * torch.ones_like(weight_mask) * weight_mask + 1 * (1 - weight_mask)
                 adjust_bias = alpha * (1 - torch.squeeze(union_mask[module_name]))
 
             elif adjust_strategy == "ada_cons_1":
@@ -202,7 +202,7 @@ def soft_clip_te_masked_gradients(
                 capacity += float(torch.sum(adjust_bias))
                 num += float(torch.sum(torch.ones_like(adjust_bias)))
 
-        capacity = capacity / num if log_capacity else None
+    capacity = capacity / num if log_capacity else None
 
     return capacity
 

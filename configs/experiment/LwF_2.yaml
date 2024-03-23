@@ -29,7 +29,7 @@ data:
 
 model:
   reg:
-    factor: 2
+    factor: 0.1
     temp: 1
 
 

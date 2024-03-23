@@ -5,7 +5,7 @@ adjust_strategy: ada
 alpha: 1e-06
 reg:
   _target_: src.models.regs.MaskSparseReg
-  factor: 0.1
+  factor: 0.75
 
 calculate_capacity: False
 log_capacity: False

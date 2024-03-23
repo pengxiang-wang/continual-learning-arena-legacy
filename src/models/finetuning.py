@@ -138,7 +138,6 @@ class Finetuning(LightningModule):
 
     def on_test_epoch_end(self):
         # update metrics
-        print(self.task_id)
         for t in range(self.task_id + 1):
             self.test_metrics_overall[f"test/loss/cls/ave"](
                 self.test_loss_cls[t].compute()

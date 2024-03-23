@@ -61,7 +61,6 @@ class Random(LightningModule):
 
     def on_test_epoch_end(self):
         # update metrics
-        print(self.task_id)
         for t in range(self.task_id + 1):
             self.test_metrics_overall[f"test/acc/ave"](self.test_acc[t].compute())
             # self.test_metrics_overall[f"test/bwt"](self.test_acc[t].compute())

@@ -8,6 +8,7 @@ reg:
   factor: 0.1
 
 log_train_mask: False
+log_capacity: True
 
 optimizer:
   _target_: torch.optim.Adam

@@ -19,5 +19,5 @@ class WeightProximityReg(nn.Module):
         for (name, param), (_, param_old) in zip(
             backbone.named_parameters(), previous_backbone.named_parameters()
         ):
-            reg += torch.sum(importance[name] * (param_old - param).pow(2)) / 2
+            reg += torch.sum(importance[name] * (param_old - param).pow(2)) 
         return (self.factor / 2) * reg
