@@ -50,7 +50,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     Returns:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
-
+ 
     # prepare loggers
     log.info("Instantiating loggers...")
     lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(

@@ -11,102 +11,192 @@
 
 </div>
 
-This is a PyTorch framework of **continual learning (CL)** experiments. Continual learning is a research field of machine learning that focuses on multi sequential tasks. This framework is created from [lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template) for CL scenarios, so it can also be used as your project template if you are researchers of CL. We also tried to offer as much as implemented CL algorithms for you experimenting around.
+> [!NOTE]
+> This source code is the implementation of my work, *AdaHAT: Adaptive Hard Attention to the Task in Task-Incremental Learning*, which has been accepted for presentation at the [ECML PKDD 2024](https://ecmlpkdd.org/2024/) conference.
 
-This framework is powered by:
+
+
+
+This framework is designed for **continual learning** (CL) experiments in PyTorch. Continual learning is an area of machine learning that deals with learning new tasks sequentially without forgetting previous ones. It’s based on the [lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template), a general deep learning framework, but tailored for CL challenges. 
+
+The framework includes the following implemented datasets and algorithms for CL currently. I’m working on integrating as many CL algorithms as possible into this framework.
+
+| CL Dataset  |    Description       |
+| :----------------------------------------------------------- |:----------------------------------------------------------- | 
+| Permuted MNIST  | A [MNIST](http://yann.lecun.com/exdb/mnist/) variant for CL by random permutation of the input pixels to form differenet tasks.   | 
+| Split MNIST | A MNIST variant for CL by spliting the dataset by class to form different tasks. |
+| Permuted CIFAR10 |  A [CIFAR](https://www.cs.toronto.edu/~kriz/cifar.html)-10 permuted variant for CL.   |
+| Split CIFAR100 | A CIFAR-100 split variant for CL.  |
+
+
+
+|           Algorithm                     |                      Publication                         | Category                |              Description               |
+| :--: | :----------: | :---: | :----------------------------------------------------------: |
+|  Finetuning (SGD)  | - |     - | Simply initialise from the last task.    |
+| LwF [[paper]](https://arxiv.org/abs/1606.09282) | ArXiv 2016 |Regularisation-based |  Make predicted labels for the new task close to those of the previous tasks.      | 
+| EWC [[paper]](https://www.pnas.org/doi/10.1073/pnas.1611835114) | PNAS 2017 |  Regularisation-based|  Regularisation on weight change based on their fisher importance calculated regarding previous tasks.   |
+| HAT  [[paper]](http://proceedings.mlr.press/v80/serra18a.html)[[code]](https://github.com/joansj/hat)| PMLR 2018 |    Architecture-based|   Learning hard attention masks to each task on the model.                             |
+| AdaHAT [[code]](https://github.com/pengxiang-wang/continual-learning-arena) | ECML PKDD 2024 (accept) |  Architecture-based|  Adaptive HAT by managing network capacity adaptively with information from previous tasks.    |
+
+
+
+
+
+The framework is powered by:
 
 - [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) - a lightweight PyTorch wrapper for high-performance AI research. It removes boilerplate part of PyTorch code like batch looping, defining optimisers and losses, training strategies, so you can focus on the core algorithm part. It also keeps scalability for customisation if needed.
-- [Hydra](https://github.com/facebookresearch/hydra) - a framework for organising configurations elegantly. The key feature is the ability to dynamically create a hierarchical configuration by composition and override it through config files and the command line. It suits deep learning very well as there are tons of hyperparameters to consider. 
+- [Hydra](https://github.com/facebookresearch/hydra) - a framework for organising configurations elegantly. It can turn parameters from Python command line into hirachconfig files, which is nice for deep learning as there are usually tons of hyperparameters. 
 
-<div align="center">
 
-_Suggestions are always welcome!_
-
-</div>
 
 ## Quick Start
 
-Here is a guide for this program running on your machine. 
-
-### Installation
-
-Clone project and install requirements. 
-
-#### Pip
+### Set up
 
 ```bash
-# clone project
+# Clone project
 git clone https://github.com/pengxiang-wang/continual-learning-arena
 cd continual-learning-arena
-
-# [OPTIONAL] create conda environment
-conda create -n myenv python=3.9
-conda activate myenv
-
-# install pytorch according to instructions
-# https://pytorch.org/get-started/
-
-# install requirements
+```
+```bash
+# Install requirements by pip
+conda create -n cl python=3.9 # [OPTIONAL] create conda environment 
+conda activate cl
 pip install -r requirements.txt
+
+# [ALTERNATIVELY] Install requirements by conda
+conda env create -f environment.yaml -n cl
+conda activate cl
 ```
 
-#### Conda
-
-```bash
-# clone project
-git clone https://github.com/pengxiang-wang/continual-learning-arena
-cd continual-learning-arena
-
-# create conda environment and install dependencies
-conda env create -f environment.yaml -n myenv
-
-# activate conda environment
-conda activate myenv
-```
-
-### Running
-
-Train continual learning model with default configuration. The default experiment is:
-- Dataset: task-incremental learning, permuted MNIST classification, 10 tasks;
-- Network: MLP network structure, task-incremental heads;
-- Algorithm: simply initialise from last tasks (usually refered to as Finetuning or SGD);
-- Metric: test average accuracy and loss over all tasks, at each task's training end.
-
-The entrance script for training is src/train.py. 
+### Run default experiment
 
 ```bash
 python src/train.py
 ```
+It is to train continual learning model with the **default configuration**. 
 
-After running, you should see something like this:
+<details>
 
-<div align="center">
+  <summary>Default Configuration</summary>
 
-![](https://github.com/ashleve/lightning-hydra-template/blob/resources/terminal.png)
+- Dataset: TIL(task-incremental learning), permuted MNIST, classification, 10 tasks;
+- Network: MLP network structure, task-incremental heads (aligned with TIL);
+- Algorithm: simply initialise from last tasks (usually refered to as Finetuning or SGD);
+- Metric: test average accuracy and loss over all tasks, at each task's training end.
 
-</div>
-
-## Running Experiments
-
-We offer many CL datasets and algorithms for you experimenting around, and keep updating new. Here is the list:
-
-
-| Original Datasets  |    CL Versions     |  Description       |
-| :----------------------------------------------------------- | :----------------------------------------------------------- |:----------------------------------------------------------- | 
-| [MNIST](http://yann.lecun.com/exdb/mnist/)  | Permuted MNIST (TIL) <br> Split MNIST (CIL) |  contain 60,000 handwritten digits grayscale images of the size 28 × 28, including 50,000 training and 10,000 test images. <br> Permuted MNIST... <br> Split MNIST...| 
-| [CIFAR-10/100](https://www.cs.toronto.edu/~kriz/cifar.html) |      | Both contain 60,000 natural RGB images of the size 32 × 32, including 50,000 training and 10,000 test images. CIFAR10 has 10 classes, while CIFAR100 has 100 classes. |
+</details>
 
 
+To run your custom experiment, you need to create an YAML experiment configuration file in [configs/experiment/](configs/experiment/) and specify the `experiment` argument following the run command:
 
-|           Algorithm                     |                      Published                                          |              Description               |
-| :--: | :----------: | :----------------------------------------------------------: |
-|  Finetuning (SGD)  | - |    Simply initialise from last tasks    |
-| **HAT**  [[paper]](http://proceedings.mlr.press/v80/serra18a.html)[[code]](https://github.com/joansj/hat)![GitHub stars](https://img.shields.io/github/stars/joansj/hat.svg?logo=github&label=Stars) | PMLR 2018 |                                   |
+```bash
+python src/train.py experiment=example
+```
+
+The value of `experiment` argument should be the name of the config file (without extension `.yaml`). Therefore this command runs the experiment specified in [example.yaml](configs/experiments/example.yaml).
 
 
 
+### Check results
 
-You can choose from them to configure and run different experiments in this program. Before you go, you need to know **how to specify configurations** (hyperparamters). I will help you understand the experiment procedure by explaining most of the configs. But you can also check the rich logs printed on console (also logs to a file in root directory called [train.log](/train.log)) to be reminded what the program is doing.
+Once the command above is executed, a folder containing all the information about the experiment is created in [logs/example/runs/](logs/example/runs/), named according to the time it was executed (It can include multiple runs if you execute the command several times). You can always check the results in this folder during the run. For example:
+
+- [config_tree.log]() contains all the experiment configuration details;
+- [test_metrics.csv]() under the [csv/]() folder outputs the tested metrics, like accuracy on each task and average accuracy over tasks. 
+
+
+
+
+## Experiment Configuration
+
+Here is how to write your YAML configuration file for an experiment. Let me take config file [example.yaml](configs/experiment/example.yaml) as an example and then you may probably find a way to write your own. 
+
+
+In the list `defaults`, each argument is associated with a value, which points to another YAML configuration file:
+
+- `override /data` specifies dataset by config file in [configs/data/](configs/data/). See [How to specify dataset](#how-to-specify-dataset) for details;
+- `override /model` specifies backbone neural network, CL algorithm and optimisation algorithm by config file in [configs/model](configs/model/). See [How to specify backbone neural network](#how-to-specify-backbone-neural-network), [How to specify CL algorithm](#how-to-specify-cl-algorithm) and [How to specify optimiser](#how-to-specify-optimiser) for details;
+- `override /trainer` specifies [Lightning trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html) by config file in [configs/trainer](configs/trainer/). The trainer controls computing configurations, including devices, batches and epochs, etc. See [How to specify devices, batches and epochs]() for details;
+- `override /logger` specifies logging tools that we'd to use for presenting results by config file in [configs/logger](configs/logger/). They are [loggers wrapped in Lightning APIs](https://lightning.ai/docs/pytorch/stable/extensions/logging.html). See [How to log results](#how-to-log-results) for details.
+- `override /callbacks` specifies [callbacks for Lightning module](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html) by config file in [configs/callbacks](configs/callbacks/). Callbacks provide non-essential logic embedded in the training and testing process. See [How to add callbacks](#how-to-add-callbacks) for details;
+
+You can easily (override) specify any configs in this high-level configuration files without modifying those in configs/dataset, configs/model, etc. In `example.yaml` you can see these overrides in the list of `data`, `model`, `trainer`... See [Quick config with override](#quick-config-with-override) for details.
+
+The `seed` argument sets the global seed for reproductivity.
+
+Other arguments are non-essentials for organising the experiment results, such as `experiment_name`, `tags`. See tips from [Organise your experiment results](#organise-your-experiment-results).
+
+
+### How to specify dataset
+
+Take a look at [til_permuted-mnist.yaml](configs/data/til_permuted_mnist.yaml). As the `_target_` argument suggests, this config file targets to instantiate the `PermutedMNIST` class in [src/data/](src/data/). We can tell that `PermutedMNIST` is in [src/data/permuted_mnist.py](src/data/permuted_mnist.py) as suggested in an line of code from [src/data/__init__.py](src/data/__init__.py)
+
+```python
+from src.data.permuted_mnist import PermutedMNIST
+```
+
+In the definition of the dataset class, all the parameters should be specified from the YAML config file. If not, an error would be raised. There are also parameters with default value. It's OK that they are not specified then they will be set as the default.
+
+Please refer to the docstring of a dataset class to know the meaning of the parameters.
+
+
+### How to specify CL scenario (TIL or CIL?)
+
+Note that these dataset classes are for continual learning. We offer two scenarios: task-incremental learning (TIL) and class-incremental learning (CIL). 
+
+In this framework the scenarios are implemented in two ways:
+- dataset classes: the `scenario` argument 
+- heads: 
+
+
+
+### How to specify backbone neural network
+
+
+
+
+
+### How to specify CL algorithm
+
+
+### How to specify optimiser
+
+
+### How to specify devices, batches and epochs
+
+We preset several trainer settings (this should include all the need). We normally set a , instead of creating seperate config files in trainer.
+
+### How to log results
+
+
+### How to add callbacks
+
+### Quick config with override
+
+Anything you don't wanna change in the original configs/data. You could add override arguments in experiments . For example, you could see in the example.yaml after 
+
+Another quicker way is to override in the command line arguments:
+```bash
+python src/train.py experiment=example d
+
+
+```
+
+
+
+## Organise your experiment results
+- `experiment_name`: the folder name  show in your output log.
+- `tags`: the tags shown in `tags.log` . See [tag system] 
+`tags.log` records the tags for the experiment which were specified beforehand where your can write some script based on this to summarise under the same tag.
+
+tips
+- 
+
+
+
+
+  from them to configure and run different experiments in this program. Before you go, you need to know **how to specify configurations** (hyperparamters). I will help you understand the experiment procedure by explaining most of the configs. But you can also check the rich logs printed on console (also logs to a file in root directory called [train.log](/train.log)) to be reminded what the program is doing.
 
 
 

@@ -1,4 +1,4 @@
-_target_: src.models.HAT
+_target_: src.models.TAMHAT
 
 s_max: 400.0
 reg:
@@ -26,10 +26,6 @@ backbone:
   input_dim: 784
   hidden_dims: [256, 100]
   output_dim: 64
-
-te_init:
-  _target_: src.models.inits.Uniform
-  
 
 heads:
   _target_: src.models.heads.HeadsTIL

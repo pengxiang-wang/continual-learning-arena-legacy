@@ -26,6 +26,8 @@ class MaskMemory:
         self.union_mask = self.empty_mask()
         if self.approach == "adahat":
             self.sum_mask = self.empty_mask()
+        if self.approach == "tamhat":
+            self.mask_counter = self.empty_mask()
 
     def get_mask(self, task_id: int):
         """Get mask of task_id."""
@@ -91,6 +93,10 @@ class MaskMemory:
 
     def get_sum_mask(self):
         return self.sum_mask
+    
+    
+    def get_mask_counter(self):
+        return self.mask_counter
 
     def combine_masks(self, mask1, mask2, operator="unite"):
         """Join two masks by element-wise maximum."""
@@ -114,6 +120,11 @@ class MaskMemory:
         """Update cumulated sum mask."""
         sum_mask = deepcopy(self.sum_mask)
         self.sum_mask = self.combine_masks(sum_mask, mask, operator="sum")
+        
+    def update_mask_counter(self, mask, pre_mask):
+        """Update mask counter for laziness."""
+        mask_counter = deepcopy(self.mask_counter)
+        self.mask_counter = mask_counter + 1 - abs(pre_mask - mask)
 
     def te2mask(self, te, backbone):
         mask = {}
@@ -123,11 +134,19 @@ class MaskMemory:
 
     def update(self, task_id: int, backbone: torch.nn.Module):
         """Store mask of self.task_id after training it, and update union mask."""
+        
+        if self.apporach == "tamhat":
+            pre_mask = deepcopy(self.masks[task_id])
+        
         mask = self.te2mask(backbone.te, backbone)
         self.masks[task_id] = mask
         self.update_union_mask(mask)
         if self.approach == "adahat":
             self.update_sum_mask(mask)
+        if self.apporach == "tamhat":
+            self.update_mask_counter(mask, pre_mask)
+            
+            
 
 
 if __name__ == "__main__":

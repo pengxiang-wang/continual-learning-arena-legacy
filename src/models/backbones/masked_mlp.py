@@ -5,7 +5,7 @@ from torch import nn
 
 
 class MaskedMLP(nn.Module):
-    """Masked MLP for HAT algorithm."""
+    r"""Masked MLP for HAT algorithm."""
 
     def __init__(
         self,
@@ -45,6 +45,7 @@ class MaskedMLP(nn.Module):
         self.test_mask = None
 
         self.module_order = [f"fc{l}" for l in range(self.layer_num)]
+
 
     def mask(self, task_embedding: nn.Embedding, scalar: float):
         return self.mask_gate(torch.tensor(scalar) * task_embedding.weight)

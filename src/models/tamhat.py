@@ -11,6 +11,7 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.models import HAT
 from src.models.calibrators import maskclipper
 from src.models.memories import MaskMemory
+from src.models.regs import TrapsNMineReg
 from src.utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
@@ -20,7 +21,7 @@ loggerpack = loggerpack.get_global_loggerpack()
 DEFAULT_SMAX = 400.0
 
 
-class AdaHAT(HAT):
+class TAMHAT(HAT):
     """LightningModule for AdaHAT (Hard Attention to Task) continual learning algorithm."""
 
     def __init__(
@@ -32,8 +33,8 @@ class AdaHAT(HAT):
         mask_sparsity_reg: torch.nn.Module,
         te_init: str = "N01", 
         s_max: float = DEFAULT_SMAX,
-        adjust_strategy: str = "ada",
-        alpha: float = 1e-06,
+        N: int = 100, 
+        factor: float = 1.0, 
         calculate_capacity: bool = False,
         log_capacity: bool = False,
         log_train_mask=False,
@@ -52,13 +53,19 @@ class AdaHAT(HAT):
 
         # Memory store mask of each task
         self.mask_memory = MaskMemory(
-            s_max=self.hparams.s_max, backbone=backbone, approach="adahat"
+            s_max=self.hparams.s_max, backbone=backbone, approach="tamhat"
         )
+                
 
     def training_step(self, batch: Any, batch_idx: int):
         x, y = batch
         opt = self.optimizers()
         opt.zero_grad()
+
+        if self.trainer.global_step % self.hparams.N == 0: 
+            mask_counter = self.mask_memory.get_mask_counter()
+            self.tamreg = TrapsNMineReg(mask_counter, self.hparams.N, self.hparams.factor)
+            
 
         num_batches = self.trainer.num_training_batches
         s = self.annealed_scalar(self.hparams.s_max, batch_idx, num_batches)
@@ -68,9 +75,11 @@ class AdaHAT(HAT):
         loss_cls = self.criterion(logits, y)
 
         previous_mask = self.mask_memory.get_union_mask()
-        loss_reg, _, reg = self.mask_sparsity_reg(mask, previous_mask)
+        loss_sparsity_reg, _, reg = self.reg(mask, previous_mask)
 
-        loss_total = loss_cls + loss_reg
+        loss_tamreg = self.tamreg(mask)
+
+        loss_total = loss_cls + loss_sparsity_reg + loss_tamreg
         preds = torch.argmax(logits, dim=1)
         targets = y
 
@@ -102,11 +111,12 @@ class AdaHAT(HAT):
         if self.log_capacity:
             loggerpack.log_capacity(capacity, self.task_id, self.global_step)
 
-        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        self.training_step_follow_up(loss_cls, loss_sparsity_reg, loss_total, preds, targets)
 
         # return loss or backpropagation will fail
         return loss_total
 
 
 if __name__ == "__main__":
-    _ = AdaHAT(None, None, None, None, None, None)
+    _ = TAMHAT(None, None, None, None, None, None)
+

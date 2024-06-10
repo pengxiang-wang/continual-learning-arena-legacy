@@ -30,8 +30,8 @@ class PermutedMNIST(LightningDataModule):
 
     def __init__(
         self,
-        data_dir: str = "data/",
-        scenario: str = "TIL",
+        data_dir: str,
+        scenario: str,
         num_tasks: int = DEFAULT_NUM_TASKS,
         joint: bool = False,
         perm_seeds: List[int] = DEFAULT_PERM_SEEDS,

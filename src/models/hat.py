@@ -21,7 +21,7 @@ DEFAULT_SMAX = 400.0
 
 
 class HAT(Finetuning):
-    """LightningModule for HAT (Hard Attention to Task) continual learning algorithm."""
+    r"""LightningModule for HAT (Hard Attention to Task) continual learning algorithm."""
 
     def __init__(
         self,
@@ -29,7 +29,8 @@ class HAT(Finetuning):
         backbone: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
-        reg: torch.nn.Module,
+        mask_sparsity_reg: torch.nn.Module,
+        te_init: str = "N01", 
         s_max: float = DEFAULT_SMAX,
         calculate_capacity: bool = False,
         log_capacity: bool = False,
@@ -38,7 +39,10 @@ class HAT(Finetuning):
         super().__init__(heads, backbone, optimizer, scheduler)
 
         # HAT regularisation loss function
-        self.reg = reg
+        self.mask_sparsity_reg = mask_sparsity_reg
+        
+        # Initialisation option for task embedding
+        self.te_init = te_init
 
         # Memory store mask of each task
         self.mask_memory = MaskMemory(
@@ -60,8 +64,17 @@ class HAT(Finetuning):
 
     def on_train_start(self):
         for embedding in self.backbone.te.values():
-            nn.init.normal_(embedding.weight, 0, 1)
-
+            if self.te_init == "N01": 
+                nn.init.normal_(embedding.weight, 0, 1)
+            elif self.te_init == "U01": 
+                nn.init.uniform_(embedding.weight, 0, 1)
+            elif self.te_init == "U-10": 
+                nn.init.uniform_(embedding.weight, -1, 0)
+            elif self.te_init == "masked": 
+                pass
+            elif self.te_init == "unmasked": 
+                embedding.weight.data.negative_()
+            
     def on_train_end(self):
         self.mask_memory.update(task_id=self.task_id, backbone=self.backbone)
 

@@ -11,7 +11,16 @@ loggerpack = loggerpack.get_global_loggerpack()
 
 
 class Finetuning(LightningModule):
-    """LightningModule for naive finetuning continual learning algorithm."""
+    r"""LightningModule for naive finetuning continual learning algorithm.
+    
+    To apply this algorithm, specify `_targets_` in `configs/model` and specify other parameters in the same config file.
+    
+    Args:
+        heads: output heads for continual learning tasks, determining TIL or CIL scenario. Defined in `src/models/heads`
+        backbone: network before heads, shared across tasks.Defined in `src/models/backbones`
+        optimizer: optimizer for training each task.
+        scheduler: learning rate scheduler for training each task.
+    """
 
     def __init__(
         self,
@@ -29,16 +38,16 @@ class Finetuning(LightningModule):
         # self maintained task_id counter
         self.task_id: Optional[int] = None
 
-        # store network module in self beyond self.hparams for convenience
+        # store network module in 'self' beyond 'self.hparams' for convenience
         self.backbone = backbone
         self.heads = heads
 
         # loss function
         self.criterion = nn.CrossEntropyLoss()  # classification loss
-        self.reg = None  # regularisation terms
 
     def forward(self, x: torch.Tensor, task_id: int):
-        # the forward process propagates input to logits of classes of task_id
+        # forward propagation for task `task_id`, from inputs to logits
+        # nothing related to forward function in PyTorch. Just for convenience.
         feature = self.backbone(x)
         logits = self.heads(feature, task_id)
         return logits
@@ -48,8 +57,7 @@ class Finetuning(LightningModule):
         x, y = batch
         logits = self.forward(x, task_id)
         loss_cls = self.criterion(logits, y)
-        loss_reg = 0.0
-        loss_total = loss_cls + loss_reg
+        loss_total = loss_cls
         preds = torch.argmax(logits, dim=1)
 
         return loss_cls, loss_reg, loss_total, preds, y
