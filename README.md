@@ -12,7 +12,7 @@
 </div>
 
 > [!NOTE]
-> This source code is the implementation of my work, *AdaHAT: Adaptive Hard Attention to the Task in Task-Incremental Learning*, which has been accepted for presentation at the [ECML PKDD 2024](https://ecmlpkdd.org/2024/) conference.
+> This source code is the implementation of my work, [*AdaHAT: Adaptive Hard Attention to the Task in Task-Incremental Learning*](https://ecmlpkdd.org/2024/program-accepted-papers-research-track/), which has been accepted for presentation at the [ECML PKDD 2024](https://ecmlpkdd.org/2024/) conference.
 
 
 
@@ -110,67 +110,100 @@ Once the command above is executed, a folder containing all the information abou
 
 ## Experiment Configuration
 
-Here is how to write your YAML configuration file for an experiment. Let me take config file [example.yaml](configs/experiment/example.yaml) as an example and then you may probably find a way to write your own. 
+Here is how to write a YAML configuration file for an experiment. Let's use the configuration file [example.yaml](configs/experiment/example.yaml) as an example, and you can use it as a reference to create your own.
 
 
-In the list `defaults`, each argument is associated with a value, which points to another YAML configuration file:
+In the defaults list, each field has a value that points to another YAML configuration file:
 
-- `override /data` specifies dataset by config file in [configs/data/](configs/data/). See [How to specify dataset](#how-to-specify-dataset) for details;
-- `override /model` specifies backbone neural network, CL algorithm and optimisation algorithm by config file in [configs/model](configs/model/). See [How to specify backbone neural network](#how-to-specify-backbone-neural-network), [How to specify CL algorithm](#how-to-specify-cl-algorithm) and [How to specify optimiser](#how-to-specify-optimiser) for details;
-- `override /trainer` specifies [Lightning trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html) by config file in [configs/trainer](configs/trainer/). The trainer controls computing configurations, including devices, batches and epochs, etc. See [How to specify devices, batches and epochs]() for details;
-- `override /logger` specifies logging tools that we'd to use for presenting results by config file in [configs/logger](configs/logger/). They are [loggers wrapped in Lightning APIs](https://lightning.ai/docs/pytorch/stable/extensions/logging.html). See [How to log results](#how-to-log-results) for details.
-- `override /callbacks` specifies [callbacks for Lightning module](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html) by config file in [configs/callbacks](configs/callbacks/). Callbacks provide non-essential logic embedded in the training and testing process. See [How to add callbacks](#how-to-add-callbacks) for details;
+- **Dataset config**: `override /data` specifies CL dataset via a config file from the [configs/data/](configs/data/) directory. See [How to specify dataset](#how-to-specify-dataset) for details;
+- **Model config**: `override /model` specifies the model used to train and test the dataset, including backbone neural network, CL algorithm, optimisation algorithm, etc via a config file from the [configs/model](configs/model/) directory. See [How to specify backbone network](#how-to-specify-backbone-network), [How to specify CL algorithm](#how-to-specify-cl-algorithm) and [How to specify optimiser and lr_scheduler](#how-to-specify-optimiser-and-lr-scheduler) for details;
+- **Trainer config**: `override /trainer` specifies [Lightning trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html) by config file in [configs/trainer](configs/trainer/). The trainer controls computing configurations, including devices, epochs, etc. See [How to specify devices, batches and epochs]() for details;
+- **Logger config**: `override /logger` specifies logging tools that we'd to use for presenting results by config file in [configs/logger](configs/logger/). They are [loggers wrapped in Lightning APIs](https://lightning.ai/docs/pytorch/stable/extensions/logging.html). See [How to log results](#how-to-log-results) for details.
+- **Callbacks config**: `override /callbacks` specifies [callbacks for Lightning module](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html) by config file in [configs/callbacks](configs/callbacks/). Callbacks provide non-essential logic embedded in the training and testing process. See [How to add callbacks](#how-to-add-callbacks) for details;
 
-You can easily (override) specify any configs in this high-level configuration files without modifying those in configs/dataset, configs/model, etc. In `example.yaml` you can see these overrides in the list of `data`, `model`, `trainer`... See [Quick config with override](#quick-config-with-override) for details.
+You can easily (override) specify any fields in this high-level configuration files without modifying those in configs/dataset, configs/model, etc. In the latter part of `example.yaml`, you can see these overrides in the list of `data`, `model`... See [Quick config with override](#quick-config-with-override) for details.
 
-The `seed` argument sets the global seed for reproductivity.
+The `seed` field sets the global seed for reproductivity.
 
-Other arguments are non-essentials for organising the experiment results, such as `experiment_name`, `tags`. See tips from [Organise your experiment results](#organise-your-experiment-results).
+Other fields are non-essentials for organising the experiment results, such as `experiment_name`, `tags`. See tips from [Organise your experiment results](#organise-your-experiment-results).
 
 
 ### How to specify dataset
 
-Take a look at [til_permuted-mnist.yaml](configs/data/til_permuted_mnist.yaml). As the `_target_` argument suggests, this config file targets to instantiate the `PermutedMNIST` class in [src/data/](src/data/). We can tell that `PermutedMNIST` is in [src/data/permuted_mnist.py](src/data/permuted_mnist.py) as suggested in an line of code from [src/data/__init__.py](src/data/__init__.py)
+Dataset is implemented as [Lightning datamodule](https://lightning.ai/docs/pytorch/stable/data/datamodule.html) object. It is specified in dataset config from the file in [configs/data/](configs/data/) directory.
+
+Take a look at the example of dataset config -- [til_permuted_mnist.yaml](configs/data/til_permuted_mnist.yaml). As the `_target_` field suggests, this config file targets to instantiate the Lightning datamodule class `PermutedMNIST` from the [src/data/](src/data/) directory. And we can tell from a line of code in [src/data/\_\_init\_\_.py](src/data/__init__.py) that `PermutedMNIST` is in [src/data/permuted_mnist.py](src/data/permuted_mnist.py):
 
 ```python
 from src.data.permuted_mnist import PermutedMNIST
 ```
 
-In the definition of the dataset class, all the parameters should be specified from the YAML config file. If not, an error would be raised. There are also parameters with default value. It's OK that they are not specified then they will be set as the default.
+In the definition of the dataset class, all parameters of a dataset class must be specified from the fields of YAML config file. If not, an error would be raised. (Note that there are also parameters with default values, which can be left unspecified and set to the defaults automatically.)
 
-Please refer to the docstring of a dataset class to know the meaning of the parameters.
+Please refer to the docstring of a dataset class to understand the meaning of the parameters. Please check out the [src/data/](src/data/) to see what datasets have been implemented.
 
 
 ### How to specify CL scenario (TIL or CIL?)
 
-Note that these dataset classes are for continual learning. We offer two scenarios: task-incremental learning (TIL) and class-incremental learning (CIL). 
+Continual learning has evolved within the research context into two major scenarios: task-incremental learning (TIL) and class-incremental learning (CIL). This framework offers both. 
 
-In this framework the scenarios are implemented in two ways:
-- dataset classes: the `scenario` argument 
-- heads: 
-
-
-
-### How to specify backbone neural network
+The CL scenario is specified at: 
+- the `scenario` field of dataset config: either `TIL` or `CIL`;
+- the `heads` field of model config: either `HeadsTIL` or `HeadsCIL` from the [src/models/heads/] directory.
 
 
+### How to specify backbone network
 
+Backbone network refers to the feature extractor before output heads. It is implemented as [PyTorch nn.module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html) object.  It is specified in the `backbone` field model config from the file in [configs/model/](configs/model/) directory. 
 
+Take a look at the example of model config -- [finetuning_mlp_til.yaml](configs/model/finetuning_mlp_til.yaml). There you can find `backbone` field specifying the backbone network. Here it instantiates the nn.Module class `MLP` from the [src/models/backbones](src/models/backbones/) directory. 
+
+Please refer to [How to specify dataset](#how-to-specify-dataset) as the instantiation works in the same way.
 
 ### How to specify CL algorithm
 
+Continual learning algorithm is implemented as [Lightning module](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html) object. It is specified in model config from the file in [configs/model/](configs/model/) directory. 
 
-### How to specify optimiser
+Take a look at the example of model config -- [finetuning_mlp_til.yaml](configs/model/finetuning_mlp_til.yaml). As the outmost `_target_` field suggests, it instantiates the Lightning module class `Finetuning` from the [src/models/](src/models/) directory. 
 
+Please refer to [How to specify dataset](#how-to-specify-dataset) as the instantiation works in the same way. Note that continual learning algorithms typically have hyperparameters while this example of Finetuning algorithm does not have any.
+
+
+### How to specify optimiser and lr_scheduler
+
+The optimization and learning rate schedule algorithm are implemented as PyTorch [optimizer](https://pytorch.org/docs/stable/optim.html#how-to-use-an-optimizer) and [lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate) object. They are specified in the `optimizer` and `scheduler` field in model config from the file in [configs/model/](configs/model/) directory. 
+
+
+Take a look at the example of model config -- [finetuning_mlp_til.yaml](configs/model/finetuning_mlp_til.yaml). There you can find `optimizer` and `scheduler` field specifying the optimizer and lr_scheduler. As the `_target_` suggests, it instantiates the optimizer class `Adam` and lr_scheduler class `ReduceLROnPlateau` from PyTorch built-ins. 
+
+For optimisers and lr_schedulers we often use PyTorch built-ins, but also could use from the custom classes from the [src/models/optimizers/](src/models/optimizers/) and [src/models/lr_schedulers/](src/models/lr_schedulers/)  directory. Note that some optimisation-based CL algorithms use different optimisers on different tasks. 
 
 ### How to specify devices, batches and epochs
 
-We preset several trainer settings (this should include all the need). We normally set a , instead of creating seperate config files in trainer.
+Configs related to computing are implemented as the Lightning [Trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html) object. They are specified in trainer config from the file in [configs/trainer/](configs/trainer/) directory. 
+
+Take a look at the example of trainer config -- [default.yaml](configs/trainer/default.yaml). As the `_target_` suggests, it instantiates the only `Trainer` class. The configs are set as the parameters of Trainer class that are called [trainer flags](https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-flags).
+
+For example, you can specify devices in the `accelerator` and `devices` flags, and epochs in the `min_epochs` and `max_epochs` flags.
+
+Note that batch size is usually a parameter of datamodule class (in dataset config from the file in [configs/data/](configs/data/) directory), because it needs to be specified when constructing dataloaders. 
+
+Please refer to [Trainer docs](https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-flags) to know more about what computing configs can be set.
+
+
 
 ### How to log results
 
+This framework manages results with [Lightning loggers](https://lightning.ai/docs/pytorch/stable/extensions/logging.html). 
+
+
+
 
 ### How to add callbacks
+
+
+
+
 
 ### Quick config with override
 
@@ -182,7 +215,7 @@ python src/train.py experiment=example d
 
 
 ```
-
+、They are very useful if you want to specify run time. Like loggers, devices.
 
 
 ## Organise your experiment results
@@ -199,6 +232,17 @@ tips
   from them to configure and run different experiments in this program. Before you go, you need to know **how to specify configurations** (hyperparamters). I will help you understand the experiment procedure by explaining most of the configs. But you can also check the rich logs printed on console (also logs to a file in root directory called [train.log](/train.log)) to be reminded what the program is doing.
 
 
+
+
+
+
+## Guideline to write your 
+
+## Implementation Thoughts
+
+How I manage task_id.
+
+Order
 
 
 
@@ -309,46 +353,6 @@ python src/train.py experiment=name1,name2
 
 ### Device Settings
 
-Training on single device like CPU, GPU and distributed training on multiple devices are all supported in this program.
-
-Lightning supports multiple ways of doing distributed training. The most common one is DDP, which spawns separate process for each GPU and averages gradients between them. To learn about other approaches read the [lightning docs](https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html).
-
-Besides, Lightning also supports [mixed precision](https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html).
-
-
-<details>
-<summary><b>Train on CPU, GPU, multi-GPU and TPU</b></summary>
-
-```bash
-# train on CPU
-python train.py trainer=cpu
-
-# train on 1 GPU
-python train.py trainer=gpu
-
-# train on TPU
-python train.py +trainer.tpu_cores=8
-
-# train with DDP (Distributed Data Parallel) (4 GPUs)
-python train.py trainer=ddp trainer.devices=4
-
-# train with DDP (Distributed Data Parallel) (8 GPUs, 2 nodes)
-python train.py trainer=ddp trainer.devices=4 trainer.num_nodes=2
-
-# simulate DDP on CPU processes
-python train.py trainer=ddp_sim trainer.devices=2
-
-# accelerate training on mac
-python train.py trainer=mps
-```
-
-
-> **Note**: When using DDP you have to be careful how you write your models - read the [docs](https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html).
-
-
-> **Warning**: Currently there are problems with DDP mode, read [this issue](https://github.com/ashleve/lightning-hydra-template/issues/393) to learn more.
-
-</details>
 
 
 

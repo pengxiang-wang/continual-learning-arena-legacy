@@ -68,8 +68,12 @@ class PermutedMNIST(LightningDataModule):
     def num_tasks(self) -> int:
         return self.hparams.num_tasks
 
+    @property
     def classes(self, task_id: int) -> List[Any]:
-        """Return class labels of task_id."""
+        """Return class labels of task_id.
+        
+        The order represents onehotindex
+        """
         return [i for i in range(NUM_CLASSES)]
 
     def prepare_data(self):
