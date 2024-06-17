@@ -146,7 +146,7 @@ Please refer to the docstring of a dataset class to know the meaning of the para
 Note that these dataset classes are for continual learning. We offer two scenarios: task-incremental learning (TIL) and class-incremental learning (CIL). 
 
 In this framework the scenarios are implemented in two ways:
-- dataset classes: the `scenario` argument 
+- dataset classes: the `scenario` argument;
 - heads: 
 
 
