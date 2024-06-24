@@ -711,7 +711,7 @@ The directory structure of this project looks like this. All Python codes are lo
 ├── .env.example              <- Example of file for storing private environment variables, see [here](https://github.com/ashleve/lightning-hydra-template/blob/main/README.md#best-practices).
 ├── .gitignore                <- List of files ignored by git
 ├── .pre-commit-config.yaml   <- Configuration of pre-commit hooks for code formatting
-├── .project-root             <- File for inferring the position of project root directory
+├── .src-root-indicator             <- File for inferring the position of project root directory
 ├── environment.yaml          <- File for installing conda environment
 ├── Makefile                  <- Makefile with commands like `make train` or `make test`
 ├── pyproject.toml            <- Configuration options for testing and linting

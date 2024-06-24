@@ -1,8 +1,8 @@
-_target_: src.models.HAT
+_target_: models.HAT
 
 s_max: 400.0
 reg:
-  _target_: src.models.regs.MaskSparseReg
+  _target_: models.regs.MaskSparseReg
   factor: 0.1
 
 log_train_mask: False
@@ -22,15 +22,15 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.MaskedMLP
+  _target_: models.backbones.MaskedMLP
   input_dim: 784
   hidden_dims: [256, 100]
   output_dim: 64
 
 te_init:
-  _target_: src.models.inits.Uniform
+  _target_: models.inits.Uniform
   
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: ${model.backbone.output_dim}

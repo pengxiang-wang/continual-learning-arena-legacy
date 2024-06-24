@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from lightning import LightningModule
 
-from src.utils import pylogger, loggerpack
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()
@@ -60,23 +60,22 @@ class Finetuning(LightningModule):
         loss_total = loss_cls
         preds = torch.argmax(logits, dim=1)
 
-        return loss_cls, loss_reg, loss_total, preds, y
+        return loss_cls, loss_total, preds, y
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
+        loss_cls, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
 
-        self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        self.training_step_follow_up(loss_cls, loss_total, preds, targets)
 
         # return loss or backpropagation will fail
         return loss_total
 
-    def training_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
+    def training_step_follow_up(self, loss_cls, loss_total, preds, targets):
 
         # update metrics
         self.train_metrics[f"task{self.task_id}/train/loss/cls"](loss_cls)
-        self.train_metrics[f"task{self.task_id}/train/loss/reg"](loss_reg)
         self.train_metrics[f"task{self.task_id}/train/loss/total"](loss_total)
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
@@ -87,23 +86,21 @@ class Finetuning(LightningModule):
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
         self.val_metrics[f"task{self.task_id}/val/loss/cls"].reset()
-        self.val_metrics[f"task{self.task_id}/val/loss/reg"].reset()
         self.val_metrics[f"task{self.task_id}/val/loss/total"].reset()
         self.val_metrics[f"task{self.task_id}/val/acc"].reset()
         self.val_metrics[f"task{self.task_id}/val/acc/best"].reset()
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss_cls, loss_reg, loss_total, preds, targets = self._model_step(
+        loss_cls, loss_total, preds, targets = self._model_step(
             batch, task_id=self.task_id
         )
 
-        self.validation_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
+        self.validation_step_follow_up(loss_cls, loss_total, preds, targets)
 
-    def validation_step_follow_up(self, loss_cls, loss_reg, loss_total, preds, targets):
+    def validation_step_follow_up(self, loss_cls, loss_total, preds, targets):
 
         # update metrics
         self.val_metrics[f"task{self.task_id}/val/loss/cls"](loss_cls)
-        self.val_metrics[f"task{self.task_id}/val/loss/reg"](loss_reg)
         self.val_metrics[f"task{self.task_id}/val/loss/total"](loss_total)
         self.val_metrics[f"task{self.task_id}/val/acc"](preds, targets)
 
@@ -127,7 +124,7 @@ class Finetuning(LightningModule):
         )
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
-        loss_cls, _, _, preds, targets = self._model_step(batch, dataloader_idx)
+        loss_cls, _, preds, targets = self._model_step(batch, dataloader_idx)
 
         self.test_step_follow_up(loss_cls, preds, targets, dataloader_idx, batch)
 

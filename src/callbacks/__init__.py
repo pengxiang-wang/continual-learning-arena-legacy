@@ -1,2 +1,2 @@
-from src.callbacks.continual_checkpoint import ContinualCheckpoint
-from src.callbacks.continual_process_bar import ContinualProgressBar
+from .continual_checkpoint import ContinualCheckpoint
+from .continual_process_bar import ContinualProgressBar

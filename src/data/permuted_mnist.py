@@ -6,8 +6,13 @@ from torch.utils.data import DataLoader, Dataset, ConcatDataset, random_split
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
-from src.data import transforms as my_transforms
-from src.utils import pylogger, loggerpack, task_labeled
+
+import pyrootutils
+
+pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+
+import data.transforms as my_transforms
+from utils import pylogger, loggerpack, task_labeled
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()
@@ -68,7 +73,6 @@ class PermutedMNIST(LightningDataModule):
     def num_tasks(self) -> int:
         return self.hparams.num_tasks
 
-    @property
     def classes(self, task_id: int) -> List[Any]:
         """Return class labels of task_id.
         

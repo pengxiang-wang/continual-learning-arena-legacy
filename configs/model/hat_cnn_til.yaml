@@ -1,8 +1,8 @@
-_target_: src.models.HAT
+_target_: models.HAT
 
 s_max: 400.0
 reg:
-  _target_: src.models.regs.MaskSparseReg
+  _target_: models.regs.MaskSparseReg
   factor: 0.1
 
 calculate_capacity: False
@@ -24,9 +24,9 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.MaskedSmallCNN
+  _target_: models.backbones.MaskedSmallCNN
   input_channels: 3
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: 512

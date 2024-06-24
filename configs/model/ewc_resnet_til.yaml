@@ -1,7 +1,7 @@
-_target_: src.models.EWC
+_target_: models.EWC
 
 reg:
-  _target_: src.models.regs.WeightProximityReg
+  _target_: models.regs.WeightProximityReg
   factor: 5000
 
 optimizer:
@@ -19,9 +19,9 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.ResNet18
+  _target_: models.backbones.ResNet18
   input_channels: 3
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: 512

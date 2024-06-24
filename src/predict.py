@@ -6,7 +6,7 @@ from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger as LightningLogger
 from omegaconf import DictConfig
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH
@@ -25,8 +25,8 @@ pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 
 from src import utils
-from src.callbacks import ContinualCheckpoint
-from src.utils import LoggerPack
+from callbacks import ContinualCheckpoint
+from utils import LoggerPack
 
 # prepare loggers
 log = utils.get_pylogger(__name__)

@@ -1,4 +1,4 @@
-_target_: src.data.SplitMNIST
+_target_: data.SplitMNIST
 data_dir: ${paths.data_dir}
 scenario: TIL
 class_split: [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]

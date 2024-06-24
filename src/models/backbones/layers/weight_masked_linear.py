@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 
-from src.models.backbones.functions import Binariser, Ternariser
+from models.backbones.functions import Binariser, Ternariser
 from torch.nn.parameter import Parameter
 
 import torch.nn.functional as F

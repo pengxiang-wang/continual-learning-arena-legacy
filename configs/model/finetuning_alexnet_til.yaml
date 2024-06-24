@@ -1,4 +1,4 @@
-_target_: src.models.Finetuning
+_target_: models.Finetuning
 
 optimizer:
   _target_: torch.optim.Adam
@@ -14,11 +14,11 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.AlexNet
+  _target_: models.backbones.AlexNet
   input_channels: 3
   size: 32
 
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: 2048

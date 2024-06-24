@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import torch
 from torch import nn
-from src.models.backbones.functions import Binariser
+from models.backbones.functions import Binariser
 
 
 class WeightMaskMemory:

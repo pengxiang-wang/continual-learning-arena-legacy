@@ -6,12 +6,12 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
 
-from src.models import HATNonUnion
-from src.models.calibrators import maskclipper
-from src.models.memories import MaskMemory
-from src.utils import pylogger, loggerpack
+from models import HATNonUnion
+from models.calibrators import maskclipper
+from models.memories import MaskMemory
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()

@@ -1,7 +1,7 @@
-_target_: src.models.EWC
+_target_: models.EWC
 
 reg:
-  _target_: src.models.regs.WeightProximityReg
+  _target_: models.regs.WeightProximityReg
   factor: 5000
 
 optimizer:
@@ -18,11 +18,11 @@ scheduler:
   patience: 10
 
 backbone:
-  _target_: src.models.backbones.MLP
+  _target_: ls.backbones.MLP
   input_dim: 784
   hidden_dims: [256, 100]
   output_dim: 64
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: ${model.backbone.output_dim}

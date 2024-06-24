@@ -151,9 +151,9 @@ class MaskMemory:
 
 if __name__ == "__main__":
     # import pyrootutils
-    # pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+    # pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
 
-    # from src.models.backbones import MaskedMLP
+    # from models.backbones import MaskedMLP
     # backbone = MaskedMLP(input_dim=784, hidden_dims=[256,256], output_dim=64)
     # mask_memory = MaskMemory(s_max=10, backbone=backbone)
     # print(backbone.te["fc1"].weight)

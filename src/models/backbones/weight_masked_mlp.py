@@ -3,8 +3,8 @@ from typing import List
 import torch
 from torch import nn
 
-from src.models.backbones.functions import Binariser, Ternariser
-from src.models.backbones.layers import WeightMaskedLinear
+from models.backbones.functions import Binariser, Ternariser
+from models.backbones.layers import WeightMaskedLinear
 
 
 class WeightMaskedMLP(nn.Module):

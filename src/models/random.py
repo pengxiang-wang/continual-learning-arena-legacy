@@ -5,8 +5,8 @@ from torch import nn
 from lightning import LightningModule
 
 
-from src.models.memories import LabelMemory
-from src.utils import pylogger, loggerpack
+from models.memories import LabelMemory
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()

@@ -2,9 +2,9 @@ from typing import Any, Optional
 
 import torch
 from torch import nn
-from src.models import Finetuning
+from models import Finetuning
 
-from src.utils import pylogger, loggerpack
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()

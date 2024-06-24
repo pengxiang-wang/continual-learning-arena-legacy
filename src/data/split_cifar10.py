@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import CIFAR10 as OrigDataset
 from torchvision.transforms import transforms
 
-from src.data import transforms as my_transforms
-from src.utils import pylogger, loggerpack
+from data import transforms as my_transforms
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()

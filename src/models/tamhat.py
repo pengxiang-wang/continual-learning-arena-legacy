@@ -6,13 +6,13 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
 
-from src.models import HAT
-from src.models.calibrators import maskclipper
-from src.models.memories import MaskMemory
-from src.models.regs import TrapsNMineReg
-from src.utils import pylogger, loggerpack
+from models import HAT
+from models.calibrators import maskclipper
+from models.memories import MaskMemory
+from models.regs import TrapsNMineReg
+from utils import pylogger, loggerpack
 
 log = pylogger.get_pylogger(__name__)
 loggerpack = loggerpack.get_global_loggerpack()

@@ -1,4 +1,4 @@
-_target_: src.data.PermutedCIFAR100
+_target_: data.PermutedCIFAR100
 data_dir: ${paths.data_dir}
 scenario: TIL
 num_tasks: 10

@@ -1,7 +1,7 @@
-_target_: src.models.LwF
+_target_: models.LwF
 
 reg:
-  _target_: src.models.regs.DistillReg
+  _target_: models.regs.DistillReg
   factor: 2
   temp: 1
 
@@ -21,9 +21,9 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.ResNet18
+  _target_: models.backbones.ResNet18
   input_channels: 3
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: 512

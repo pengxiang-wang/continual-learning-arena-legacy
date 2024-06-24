@@ -1,10 +1,10 @@
-_target_: src.models.AdaHAT
+_target_: models.AdaHAT
 
 s_max: 400.0
 adjust_strategy: ada
 alpha: 1e-06
 reg:
-  _target_: src.models.regs.MaskSparseReg
+  _target_: models.regs.MaskSparseReg
   factor: 0.75
 
 calculate_capacity: False
@@ -26,9 +26,9 @@ scheduler:
   threshold: 0.09
 
 backbone:
-  _target_: src.models.backbones.MaskedResNet18
+  _target_: models.backbones.MaskedResNet18
   input_channels: 3
 
 heads:
-  _target_: src.models.heads.HeadsTIL
+  _target_: models.heads.HeadsTIL
   input_dim: 512
