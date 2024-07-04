@@ -9,7 +9,7 @@ from torch import nn
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
 
 def task_labeled(Dataset):

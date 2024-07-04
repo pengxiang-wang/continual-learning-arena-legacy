@@ -1,0 +1,15 @@
+# train with many loggers at once
+
+pylogger:
+  log_dir: ${paths.log_dir}
+  filename: ${paths.pylog_filename}
+  level: 0
+  fmt: "%(asctime)s %(name)s %(levelname)s: %(message)s"
+
+lightning_loggers:
+- csv.yaml
+- tensorboard.yaml
+  # - comet.yaml
+  # - mlflow.yaml
+  # - neptune.yaml
+  # - wandb.yaml

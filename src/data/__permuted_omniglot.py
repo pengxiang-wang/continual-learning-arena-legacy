@@ -6,11 +6,11 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import Omniglot
 from torchvision.transforms import transforms
 
-from data import transforms as my_transforms
-from utils import pylogger, loggerpack
+from src.data import transforms as my_transforms
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 NUM_CLASSES = 1623
 INPUT_SIZE = (1, 105, 105)

@@ -6,11 +6,11 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import CIFAR10 as OrigDataset
 from torchvision.transforms import transforms
 
-from data import transforms as my_transforms
-from utils import pylogger, loggerpack
+from src.data import transforms as my_transforms
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 NUM_CLASSES = 10
@@ -136,7 +136,7 @@ class SplitCIFAR10(LightningDataModule):
         Returns:
             nn.Dataset: subset of original dataset in classes.
         """
-        # Get from dataset.data and dataset.targets
+        # Get from src.dataset.data and dataset.targets
         idx = dataset.targets == classes[0]
         for cls in classes[1:]:
             idx = (dataset.targets == cls) | idx

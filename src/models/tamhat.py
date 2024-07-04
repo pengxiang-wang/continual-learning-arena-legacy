@@ -6,16 +6,16 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import HAT
-from models.calibrators import maskclipper
-from models.memories import MaskMemory
-from models.regs import TrapsNMineReg
-from utils import pylogger, loggerpack
+from src.models import HAT
+from src.models.calibrators import maskclipper
+from src.models.memories import MaskMemory
+from src.models.regs import TrapsNMineReg
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 DEFAULT_SMAX = 400.0
@@ -31,10 +31,10 @@ class TAMHAT(HAT):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         mask_sparsity_reg: torch.nn.Module,
-        te_init: str = "N01", 
+        te_init: str = "N01",
         s_max: float = DEFAULT_SMAX,
-        N: int = 100, 
-        factor: float = 1.0, 
+        N: int = 100,
+        factor: float = 1.0,
         calculate_capacity: bool = False,
         log_capacity: bool = False,
         log_train_mask=False,
@@ -55,17 +55,17 @@ class TAMHAT(HAT):
         self.mask_memory = MaskMemory(
             s_max=self.hparams.s_max, backbone=backbone, approach="tamhat"
         )
-                
 
     def training_step(self, batch: Any, batch_idx: int):
         x, y = batch
         opt = self.optimizers()
         opt.zero_grad()
 
-        if self.trainer.global_step % self.hparams.N == 0: 
+        if self.trainer.global_step % self.hparams.N == 0:
             mask_counter = self.mask_memory.get_mask_counter()
-            self.tamreg = TrapsNMineReg(mask_counter, self.hparams.N, self.hparams.factor)
-            
+            self.tamreg = TrapsNMineReg(
+                mask_counter, self.hparams.N, self.hparams.factor
+            )
 
         num_batches = self.trainer.num_training_batches
         s = self.annealed_scalar(self.hparams.s_max, batch_idx, num_batches)
@@ -103,15 +103,17 @@ class TAMHAT(HAT):
 
         # log mask
         if self.log_train_mask:
-            loggerpack.log_train_mask(
+            logger.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
 
         # log capacity
         if self.log_capacity:
-            loggerpack.log_capacity(capacity, self.task_id, self.global_step)
+            logger.log_capacity(capacity, self.task_id, self.global_step)
 
-        self.training_step_follow_up(loss_cls, loss_sparsity_reg, loss_total, preds, targets)
+        self.training_step_follow_up(
+            loss_cls, loss_sparsity_reg, loss_total, preds, targets
+        )
 
         # return loss or backpropagation will fail
         return loss_total
@@ -119,4 +121,3 @@ class TAMHAT(HAT):
 
 if __name__ == "__main__":
     _ = TAMHAT(None, None, None, None, None, None)
-

@@ -8,7 +8,7 @@ compile: false
 ckpt_path: null
 seed: null
 data:
-  _target_: .data.PermutedMNIST
+  _target_: .src.data.PermutedMNIST
   data_dir: ${paths.data_dir}
   scenario: TIL
   num_tasks: 10
@@ -49,7 +49,7 @@ model:
     output_dim: 64
   heads:
     _target_: models.heads.HeadsTIL
-    input_dim: ${model.backbone.output_dim}
+    input_dim: ${src.model.backbone.output_dim}
 callbacks:
   model_checkpoint:
     _target_: lightning.pytorch.callbacks.ModelCheckpoint

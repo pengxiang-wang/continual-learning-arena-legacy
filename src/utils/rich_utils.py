@@ -9,9 +9,11 @@ from lightning.pytorch.utilities import rank_zero_only
 from omegaconf import DictConfig, OmegaConf, open_dict
 from rich.prompt import Prompt
 
-from utils import pylogger
+# import our own modules
+# because of the setup_root in train.py and so on, we can import from src without any problems
+from src.utils import get_logger
 
-log = pylogger.get_pylogger(__name__)
+logger = get_logger()
 
 
 @rank_zero_only
@@ -48,7 +50,7 @@ def print_config_tree(
         (
             queue.append(field)
             if field in cfg
-            else log.warning(
+            else logger.pylogger.warning(
                 f"Field '{field}' not found in config. Skipping '{field}' config printing..."
             )
         )
@@ -87,14 +89,16 @@ def enforce_tags(cfg: DictConfig, save_to_file: bool = False) -> None:
         if "id" in HydraConfig().cfg.hydra.job:
             raise ValueError("Specify tags before launching a multirun!")
 
-        log.warning("No tags provided in config. Prompting user to input tags...")
+        logger.pylogger.warning(
+            "No tags provided in config. Prompting user to input tags..."
+        )
         tags = Prompt.ask("Enter a list of comma separated tags", default="dev")
         tags = [t.strip() for t in tags.split(",") if t != ""]
 
         with open_dict(cfg):
             cfg.tags = tags
 
-        log.info(f"Tags: {cfg.tags}")
+        logger.pylogger.info(f"Tags: {cfg.tags}")
 
     if save_to_file:
         with open(Path(cfg.paths.output_dir, "tags.log"), "w") as file:

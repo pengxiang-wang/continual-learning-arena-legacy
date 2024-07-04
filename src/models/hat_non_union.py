@@ -6,15 +6,15 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import HAT
-from models.calibrators import maskclipper
-from models.memories import MaskMemory
-from utils import pylogger, loggerpack
+from src.models import HAT
+from src.models.calibrators import maskclipper
+from src.models.memories import MaskMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 DEFAULT_SMAX = 400.0
 
@@ -71,11 +71,11 @@ class HATNonUnion(HAT):
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
         # log_metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
+        logger.log_train_metrics(self, self.train_metrics)
 
         # log mask
         if self.log_train_mask:
-            loggerpack.log_train_mask(
+            logger.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
 
@@ -105,7 +105,7 @@ class HATNonUnion(HAT):
         self.val_metrics[f"task{self.task_id}/val/acc"](preds, targets)
 
         # log metrics
-        loggerpack.log_val_metrics(self, self.val_metrics)
+        logger.log_val_metrics(self, self.val_metrics)
 
 
 if __name__ == "__main__":

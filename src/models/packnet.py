@@ -6,15 +6,15 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import Finetuning
-from models.calibrators import weightmaskclipper
-from models.memories import WeightMaskMemory
-from utils import pylogger, loggerpack
+from src.models import Finetuning
+from src.models.calibrators import weightmaskclipper
+from src.models.memories import WeightMaskMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 class PackNet(Finetuning):
@@ -63,7 +63,7 @@ class PackNet(Finetuning):
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
         # log metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
+        logger.log_train_metrics(self, self.train_metrics)
 
         # return loss or backpropagation will fail
         return loss_total

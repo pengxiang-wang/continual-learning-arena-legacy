@@ -5,11 +5,11 @@ from torch import nn
 from lightning import LightningModule
 
 
-from models.memories import LabelMemory
-from utils import pylogger, loggerpack
+from src.models.memories import LabelMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 class Random(LightningModule):
@@ -53,11 +53,9 @@ class Random(LightningModule):
         self.test_metrics["test/acc"][dataloader_idx](preds, targets)
 
         # log metrics
-        loggerpack.log_test_metrics_progress_bar(
-            self, self.test_metrics, dataloader_idx
-        )
+        logger.log_test_metrics_progress_bar(self, self.test_metrics, dataloader_idx)
 
-        loggerpack.log_test_samples(batch, preds, targets, dataloader_idx)
+        logger.log_test_samples(batch, preds, targets, dataloader_idx)
 
     def on_test_epoch_end(self):
         # update metrics
@@ -66,7 +64,7 @@ class Random(LightningModule):
             # self.test_metrics_overall[f"test/bwt"](self.test_acc[t].compute())
 
         # log metrics
-        loggerpack.log_test_metrics(
+        logger.log_test_metrics(
             self, self.test_metrics, self.test_metrics_overall, task_id=self.task_id
         )
 

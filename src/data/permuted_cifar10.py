@@ -7,10 +7,10 @@ from torchvision.datasets import CIFAR10
 from torchvision.transforms import transforms
 
 import data.transforms as my_transforms
-from utils import pylogger, loggerpack
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)
@@ -51,7 +51,6 @@ class PermutedCIFAR10(LightningDataModule):
         self.data_dir = data_dir
         self.scenario = scenario
         self.joint = joint
-
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -115,34 +114,34 @@ class PermutedCIFAR10(LightningDataModule):
         if stage == "fit":
             data_train_before_split = (
                 CIFAR10(
-                root=self.data_dir,
-                train=True,
-                transform=transforms.Compose(
-                    [
-                        self.train_base_transforms[self.task_id],
-                        self.normalize_transform,
-                        transforms.RandomErasing(
-                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
-                        ),
-                    ]
-                ),
-                target_transform=one_hot_index,
-                download=False,
-                ) 
+                    root=self.data_dir,
+                    train=True,
+                    transform=transforms.Compose(
+                        [
+                            self.train_base_transforms[self.task_id],
+                            self.normalize_transform,
+                            transforms.RandomErasing(
+                                p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                            ),
+                        ]
+                    ),
+                    target_transform=one_hot_index,
+                    download=False,
+                )
                 if not self.joint
                 else TaskLabeledCIFAR10(
                     task_id=self.task_id,
                     root=self.data_dir,
                     train=True,
                     transform=transforms.Compose(
-                    [
-                        self.train_base_transforms[self.task_id],
-                        self.normalize_transform,
-                        transforms.RandomErasing(
-                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
-                        ),
-                    ]
-                ),
+                        [
+                            self.train_base_transforms[self.task_id],
+                            self.normalize_transform,
+                            transforms.RandomErasing(
+                                p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                            ),
+                        ]
+                    ),
                     target_transform=one_hot_index,
                     download=False,
                 )
@@ -152,8 +151,7 @@ class PermutedCIFAR10(LightningDataModule):
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
-            
-            
+
             if (not self.joint) or self.task_id == 0:
                 self.data_train = data_train
                 self.data_val = data_val
@@ -161,7 +159,6 @@ class PermutedCIFAR10(LightningDataModule):
                 self.data_train = ConcatDataset([self.data_train, data_train])
                 self.data_val = ConcatDataset([self.data_val, data_val])
 
-            
         elif stage == "test":
             self.data_test_orig[self.task_id] = CIFAR10(
                 self.data_dir,
@@ -212,8 +209,8 @@ class PermutedCIFAR10(LightningDataModule):
             )
             for task_id, data_test in self.data_test.items()
         }
-        
-    
+
+
 class TaskLabeledCIFAR10(CIFAR10):
     def __init__(
         self,

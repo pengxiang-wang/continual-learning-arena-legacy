@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from data import PermutedMNIST
+from src.data import PermutedMNIST
 
 
 @pytest.mark.parametrize("batch_size", [32, 128])

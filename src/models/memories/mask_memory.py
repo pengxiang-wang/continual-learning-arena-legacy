@@ -41,7 +41,7 @@ class MaskMemory:
         """Create empty mask (all zeros) with mask size of backbone."""
         mask = {}
         for module_name, embedding in self.backbone.te.items():
-                mask[module_name] = torch.zeros_like(embedding.weight).to("cuda:0")
+            mask[module_name] = torch.zeros_like(embedding.weight).to("cuda:0")
 
         return mask
 
@@ -60,12 +60,13 @@ class MaskMemory:
 
             module_order = self.backbone.module_order
             upper_module_index = module_order.index(module_name) - 1
-            
-            
-            upper_module_name = module_order[upper_module_index] if upper_module_index != -1 else None
+
+            upper_module_name = (
+                module_order[upper_module_index] if upper_module_index != -1 else None
+            )
             # if upper_module_name == "residual": upper_module_name = None
-                
-            if upper_module_name: 
+
+            if upper_module_name:
                 upper_mask = (
                     self.union_mask[upper_module_name]
                     if mask_type == "union"
@@ -87,14 +88,13 @@ class MaskMemory:
                 weight_mask = torch.min(mask_expand, upper_mask_expand)
             else:
                 weight_mask = mask_expand
-                # print("weight_mask", weight_mask.size())            
+                # print("weight_mask", weight_mask.size())
 
         return weight_mask
 
     def get_sum_mask(self):
         return self.sum_mask
-    
-    
+
     def get_mask_counter(self):
         return self.mask_counter
 
@@ -120,7 +120,7 @@ class MaskMemory:
         """Update cumulated sum mask."""
         sum_mask = deepcopy(self.sum_mask)
         self.sum_mask = self.combine_masks(sum_mask, mask, operator="sum")
-        
+
     def update_mask_counter(self, mask, pre_mask):
         """Update mask counter for laziness."""
         mask_counter = deepcopy(self.mask_counter)
@@ -134,10 +134,10 @@ class MaskMemory:
 
     def update(self, task_id: int, backbone: torch.nn.Module):
         """Store mask of self.task_id after training it, and update union mask."""
-        
+
         if self.apporach == "tamhat":
             pre_mask = deepcopy(self.masks[task_id])
-        
+
         mask = self.te2mask(backbone.te, backbone)
         self.masks[task_id] = mask
         self.update_union_mask(mask)
@@ -145,15 +145,13 @@ class MaskMemory:
             self.update_sum_mask(mask)
         if self.apporach == "tamhat":
             self.update_mask_counter(mask, pre_mask)
-            
-            
 
 
 if __name__ == "__main__":
     # import pyrootutils
-    # pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+    # pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-    # from models.backbones import MaskedMLP
+    # from src.models.backbones import MaskedMLP
     # backbone = MaskedMLP(input_dim=784, hidden_dims=[256,256], output_dim=64)
     # mask_memory = MaskMemory(s_max=10, backbone=backbone)
     # print(backbone.te["fc1"].weight)

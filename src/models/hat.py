@@ -6,15 +6,15 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import Finetuning
-from models.calibrators import maskclipper
-from models.memories import MaskMemory
-from utils import pylogger, loggerpack
+from src.models import Finetuning
+from src.models.calibrators import maskclipper
+from src.models.memories import MaskMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 DEFAULT_SMAX = 400.0
@@ -30,7 +30,7 @@ class HAT(Finetuning):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         mask_sparsity_reg: torch.nn.Module,
-        te_init: str = "N01", 
+        te_init: str = "N01",
         s_max: float = DEFAULT_SMAX,
         calculate_capacity: bool = False,
         log_capacity: bool = False,
@@ -40,7 +40,7 @@ class HAT(Finetuning):
 
         # HAT regularisation loss function
         self.mask_sparsity_reg = mask_sparsity_reg
-        
+
         # Initialisation option for task embedding
         self.te_init = te_init
 
@@ -64,17 +64,17 @@ class HAT(Finetuning):
 
     def on_train_start(self):
         for embedding in self.backbone.te.values():
-            if self.te_init == "N01": 
+            if self.te_init == "N01":
                 nn.init.normal_(embedding.weight, 0, 1)
-            elif self.te_init == "U01": 
+            elif self.te_init == "U01":
                 nn.init.uniform_(embedding.weight, 0, 1)
-            elif self.te_init == "U-10": 
+            elif self.te_init == "U-10":
                 nn.init.uniform_(embedding.weight, -1, 0)
-            elif self.te_init == "masked": 
+            elif self.te_init == "masked":
                 pass
-            elif self.te_init == "unmasked": 
+            elif self.te_init == "unmasked":
                 embedding.weight.data.negative_()
-            
+
     def on_train_end(self):
         self.mask_memory.update(task_id=self.task_id, backbone=self.backbone)
 
@@ -104,7 +104,9 @@ class HAT(Finetuning):
         # backward step
         self.manual_backward(loss_total)
         capacity = maskclipper.hard_clip_te_masked_gradients(
-            self.backbone, self.mask_memory, self.log_capacity,
+            self.backbone,
+            self.mask_memory,
+            self.log_capacity,
         )
         maskclipper.compensate_te_gradients(
             self.backbone, compensate_thres=50, scalar=s, s_max=self.hparams.s_max
@@ -115,13 +117,13 @@ class HAT(Finetuning):
 
         # log mask
         if self.log_train_mask:
-            loggerpack.log_train_mask(
+            logger.log_train_mask(
                 mask, self.task_id, self.global_step, plot_figure=True
             )
 
         # log capacity
         if self.log_capacity:
-            loggerpack.log_capacity(capacity, self.task_id, self.global_step)
+            logger.log_capacity(capacity, self.task_id, self.global_step)
 
         self.training_step_follow_up(loss_cls, loss_reg, loss_total, preds, targets)
 
@@ -150,7 +152,7 @@ class HAT(Finetuning):
         # log test mask
         mask = self.mask_memory.get_mask(self.task_id)
         previous_mask = self.mask_memory.get_union_mask()
-        loggerpack.log_test_mask(mask, previous_mask, self.task_id)
+        logger.log_test_mask(mask, previous_mask, self.task_id)
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         x, y = batch

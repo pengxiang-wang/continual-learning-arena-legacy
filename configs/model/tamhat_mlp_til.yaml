@@ -29,4 +29,4 @@ backbone:
 
 heads:
   _target_: models.heads.HeadsTIL
-  input_dim: ${model.backbone.output_dim}
+  input_dim: ${src.model.backbone.output_dim}

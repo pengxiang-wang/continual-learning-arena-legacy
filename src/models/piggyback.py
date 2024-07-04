@@ -6,15 +6,15 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import Finetuning
-from models.calibrators import weightmaskclipper
-from models.memories import WeightMaskMemory
-from utils import pylogger, loggerpack
+from src.models import Finetuning
+from src.models.calibrators import weightmaskclipper
+from src.models.memories import WeightMaskMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 class Piggyback(Finetuning):
@@ -85,7 +85,7 @@ class Piggyback(Finetuning):
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
         # log metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
+        logger.log_train_metrics(self, self.train_metrics)
 
         # return loss or backpropagation will fail
         return loss_total
@@ -110,7 +110,7 @@ class Piggyback(Finetuning):
         self.val_metrics[f"task{self.task_id}/val/acc"](preds, targets)
 
         # log metrics
-        loggerpack.log_val_metrics(self, self.val_metrics)
+        logger.log_val_metrics(self, self.val_metrics)
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         x, y = batch
@@ -128,11 +128,9 @@ class Piggyback(Finetuning):
         self.test_metrics["test/acc"][dataloader_idx](preds, targets)
 
         # log metrics
-        loggerpack.log_test_metrics_progress_bar(
-            self, self.test_metrics, dataloader_idx
-        )
+        logger.log_test_metrics_progress_bar(self, self.test_metrics, dataloader_idx)
 
-        loggerpack.log_test_samples(batch, preds, targets, dataloader_idx)
+        logger.log_test_samples(batch, preds, targets, dataloader_idx)
 
 
 if __name__ == "__main__":

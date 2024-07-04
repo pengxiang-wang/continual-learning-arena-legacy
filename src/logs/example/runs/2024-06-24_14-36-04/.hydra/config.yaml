@@ -8,7 +8,7 @@ compile: false
 ckpt_path: null
 seed: null
 data:
-  _target_: data.PermutedMNIST
+  _target_: src.data.PermutedMNIST
   data_dir: ${paths.data_dir}
   scenario: TIL
   num_tasks: 10

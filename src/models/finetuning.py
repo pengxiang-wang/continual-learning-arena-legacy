@@ -4,17 +4,17 @@ import torch
 from torch import nn
 from lightning import LightningModule
 
-from utils import pylogger, loggerpack
-
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+# import our own modules
+# because of the setup_root in train.py and so on, we can import from src without any problems
+from src.utils import get_logger
+logger = get_logger()
 
 
 class Finetuning(LightningModule):
     r"""LightningModule for naive finetuning continual learning algorithm.
-    
+    #
     To apply this algorithm, specify `_targets_` in `configs/model` and specify other parameters in the same config file.
-    
+
     Args:
         heads: output heads for continual learning tasks, determining TIL or CIL scenario. Defined in `src/models/heads`
         backbone: network before heads, shared across tasks.Defined in `src/models/backbones`
@@ -80,7 +80,7 @@ class Finetuning(LightningModule):
         self.train_metrics[f"task{self.task_id}/train/acc"](preds, targets)
 
         # log_metrics
-        loggerpack.log_train_metrics(self, self.train_metrics)
+        logger.log_train_metrics(self, self.train_metrics)
 
     def on_val_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -105,7 +105,7 @@ class Finetuning(LightningModule):
         self.val_metrics[f"task{self.task_id}/val/acc"](preds, targets)
 
         # log metrics
-        loggerpack.log_val_metrics(self, self.val_metrics)
+        logger.log_val_metrics(self, self.val_metrics)
 
     def on_validation_epoch_end(self):
         acc = self.val_metrics[
@@ -135,11 +135,11 @@ class Finetuning(LightningModule):
         self.test_metrics["test/acc"][dataloader_idx](preds, targets)
 
         # log metrics
-        loggerpack.log_test_metrics_progress_bar(
+        logger.log_test_metrics_progress_bar(
             self, self.test_metrics, dataloader_idx
         )
 
-        loggerpack.log_test_samples(batch, preds, targets, dataloader_idx)
+        logger.log_test_samples(batch, preds, targets, dataloader_idx)
 
     def on_test_epoch_end(self):
         # update metrics
@@ -151,7 +151,7 @@ class Finetuning(LightningModule):
             # self.test_metrics_overall[f"test/bwt"](self.test_acc[t].compute())
 
         # log metrics
-        loggerpack.log_test_metrics(
+        logger.log_test_metrics(
             self, self.test_metrics, self.test_metrics_overall, task_id=self.task_id
         )
 

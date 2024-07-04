@@ -3,11 +3,11 @@ from typing import Any, Optional
 import torch
 from torch import nn
 
-from models import Finetuning
-from utils import pylogger, loggerpack
+from src.models import Finetuning
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 class Joint(Finetuning):

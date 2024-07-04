@@ -1,4 +1,4 @@
-_target_: data.SplitCIFAR100
+_target_: src.data.SplitCIFAR100
 data_dir: ${paths.data_dir}
 scenario: TIL
 class_split: [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9],

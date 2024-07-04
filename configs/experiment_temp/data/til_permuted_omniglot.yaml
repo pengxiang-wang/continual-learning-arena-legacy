@@ -1,4 +1,4 @@
-_target_: data.PermutedOmniglot
+_target_: src.data.PermutedOmniglot
 data_dir: ${paths.data_dir}
 scenario: TIL
 num_tasks: 10

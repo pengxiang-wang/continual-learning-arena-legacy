@@ -18,7 +18,7 @@ def read_dataset_images(dataset: Dataset, img_idx: List[int], normalize_transfor
     Returns:
         img_list (List[Tensor]): unnormalized.
         batch (Tensor): normalized data as inputs to model.
-        target_list (Tensor): targets are also retrieved from dataset.
+        target_list (Tensor): targets are also retrieved from src.dataset.
 
     """
     img_list = [dataset[idx][0] for idx in img_idx]

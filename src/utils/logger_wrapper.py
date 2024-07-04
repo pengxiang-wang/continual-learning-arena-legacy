@@ -1,9 +1,12 @@
 import csv
 import os
 from typing import Any, Callable, List
+import logging
 
+import hydra
 import numpy as np
 
+from omegaconf import DictConfig
 import torch
 from lightning import LightningModule
 from lightning.pytorch.loggers import Logger as LightningLogger
@@ -12,20 +15,77 @@ from lightning.pytorch.utilities import rank_zero_only
 import matplotlib.pyplot as plt
 
 
-from utils import pylogger
+class Logger:
+    r"""
+    A class that wraps anything about logging. It includes:
+    - A Python logger object for command line logging (from Python built-in [logging](https://docs.python.org/3/library/logging.html) module). It can be called by `logger.pylogger`.
+    - Lightning loggers objects such as [TensorBoardLogger](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#tensorboard) and [CSVLogger](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#csvlogger). They are passed as a list to Lightning Trainer object.
+    - Other predefined logging fuctions using Python logger and Lightning loggers.
 
-log = pylogger.get_pylogger(__name__)
-
-
-class LoggerPack:
-    """Pack all kinds of loggers to be used everywhere.
-
-    Logs in PyTorch Lightning only support scalars. We wrote this logger wrapper for other things to be logged.
+    Args:
+        logger_cfg (DictConfig): Configuration composed by Hydra.
     """
 
-    def __init__(self, loggers: List[LightningLogger], log_dir: str):
-        self.loggers = loggers  # Lightning logger
-        self.log_dir = log_dir
+    def __init__(
+        self,
+        logger_cfg: DictConfig,
+        log_dir: str,
+    ):
+        self.pylogger = self.instantiate_pylogger(
+            logger_cfg.pylogger
+        )  # python logger object
+        self.lightning_loggers = self.instantiate_lightning_loggers(
+            logger_cfg.get("lightning_loggers")
+        )  # Lightning loggers
+        self.log_dir = log_dir  # some might need it
+
+    def instantiate_pylogger(self, pylogger_logger_cfg: DictConfig) -> logging.Logger:
+        r"""Initializes multi-GPU-friendly python command line logger."""
+
+        pylogger = logging.getLogger(__name__)
+        pylog_path = os.path.join(pylogger_logger_cfg.log_dir, pylogger_logger_cfg.filename)
+        file_handler = logging.FileHandler(pylog_path)
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(fmt=pylogger_logger_cfg.fmt)
+        file_handler.setFormatter(formatter)
+        pylogger.addHandler(file_handler)
+
+        # this ensures all logging levels get marked with the rank zero decorator
+        # otherwise logs would get multiplied for each GPU process in multi-GPU setup
+        logging_levels = (
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "exception",
+            "fatal",
+            "critical",
+        )
+        for level in logging_levels:
+            setattr(pylogger, level, rank_zero_only(getattr(pylogger, level)))
+
+        return pylogger
+
+    def instantiate_lightning_loggers(
+        self, lightning_logger_cfg: DictConfig
+    ) -> List[LightningLogger]:
+        """Instantiates loggers from config."""
+
+        lightning_loggers: List[LightningLogger] = []
+
+        if not lightning_logger_cfg:
+            self.pylogger.warning("No lightning loggers config found! Skipping...")
+            return lightning_loggers
+
+        if not isinstance(lightning_logger_cfg, DictConfig):
+            raise TypeError("Logger config must be a DictConfig!")
+
+        for _, lg_conf in lightning_logger_cfg.items():
+            if isinstance(lg_conf, DictConfig) and "_target_" in lg_conf:
+                self.pylogger.info(f"Instantiating logger <{lg_conf._target_}>")
+                lightning_loggers.append(hydra.utils.instantiate(lg_conf))
+
+        return lightning_loggers
 
     @rank_zero_only
     def log_hyperparameters(self, object_dict: dict) -> None:
@@ -42,7 +102,9 @@ class LoggerPack:
         trainer = object_dict["trainer"]
 
         if not trainer.logger:
-            log.warning("Logger not found! Skipping hyperparameter logging...")
+            logger.pylogger.warning(
+                "Logger not found! Skipping hyperparameter logging..."
+            )
             return
 
         hparams["model"] = cfg["model"]
@@ -332,13 +394,16 @@ class LoggerPack:
     #     """
     #     def wrap()
 
+    # loggers all in one pack
+    # make logger available across all modules. There must be only one logger instance.
+    # after globalising, use `utils.get_global_logger()` in other modules.
 
-def globalise_loggerpack(loggerpack_local: LoggerPack) -> LoggerPack:
-    """Globalise loggerpack."""
-    global loggerpack
-    loggerpack = loggerpack_local
+logger = None
+def set_logger_global(logger_local: Logger):
+    """Set the globalised logger."""
+    global logger
+    logger = logger_local
 
-
-def get_global_loggerpack():
-    """Get the globalised loggerpack."""
-    return loggerpack
+def get_logger():
+    """Get the globalised logger."""
+    return logger

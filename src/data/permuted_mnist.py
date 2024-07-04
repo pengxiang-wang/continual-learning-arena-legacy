@@ -9,13 +9,13 @@ from torchvision.transforms import transforms
 
 import pyrootutils
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
 import data.transforms as my_transforms
-from utils import pylogger, loggerpack, task_labeled
+from src.utils import logger, logger, task_labeled
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (1, 28, 28)
@@ -75,7 +75,7 @@ class PermutedMNIST(LightningDataModule):
 
     def classes(self, task_id: int) -> List[Any]:
         """Return class labels of task_id.
-        
+
         The order represents onehotindex
         """
         return [i for i in range(NUM_CLASSES)]

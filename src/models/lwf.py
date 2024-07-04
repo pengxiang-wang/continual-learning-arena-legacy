@@ -6,14 +6,14 @@ import pyrootutils
 import torch
 from torch import nn
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
-from models import Finetuning
-from models.memories import ModelMemory
-from utils import pylogger, loggerpack
+from src.models import Finetuning
+from src.models.memories import ModelMemory
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 
 class LwF(Finetuning):
@@ -36,9 +36,7 @@ class LwF(Finetuning):
         self.model_memory = ModelMemory()
 
     def on_train_end(self):
-        self.model_memory.update(
-            backbone=self.backbone, heads=self.heads
-        )
+        self.model_memory.update(backbone=self.backbone, heads=self.heads)
 
     def _model_step(self, batch: Any, task_id: int):
         # common forward step among training, validation, testing step

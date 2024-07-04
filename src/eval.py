@@ -6,12 +6,12 @@ from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger as LightningLogger
 from omegaconf import DictConfig
 
-pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=True)
+pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH
 #       (so you don't need to force user to install project as a package)
-#       (necessary before importing any local modules e.g. `from src import utils`)
+#       (necessary before importing any local modules e.g. `from src from src import utils`)
 # - setting up PROJECT_ROOT environment variable
 #       (which is used as a base for paths in "configs/paths/default.yaml")
 #       (this way all filepaths are the same no matter where you run the code)
@@ -24,9 +24,9 @@ pyrootutils.setup_root(__file__, indicator=".src-root-indicator", pythonpath=Tru
 # more info: https://github.com/ashleve/pyrootutils
 # ------------------------------------------------------------------------------------ #
 
-from src import utils
+from src from src import utils
 from callbacks import ContinualCheckpoint
-from utils import LoggerPack
+from src.utils import Logger
 
 # prepare loggers
 log = utils.get_pylogger(__name__)
@@ -49,30 +49,30 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     assert cfg.ckpt_path  # checkpoint path must be provided
 
     # prepare loggers
-    log.info("Instantiating loggers...")
+    logger.pylogger.info("Instantiating loggers...")
     lightning_loggers: List[LightningLogger] = utils.instantiate_lightning_loggers(
         cfg.get("logger")
     )
 
-    loggerpack: LoggerPack = LoggerPack(
+    logger: Logger = Logger(
         loggers=lightning_loggers, log_dir=cfg.paths.output_dir
     )  # loggers all in one pack
-    # make loggerpack available across all modules. There must be only one loggerpack instance.
-    # after globalising, use `utils.get_global_loggerpack()` in other modules.
-    utils.globalise_loggerpack(loggerpack)
+    # make logger available across all modules. There must be only one logger instance.
+    # after globalising, use `utils.get_global_logger()` in other modules.
+    utils.globalise_logger(logger)
 
-    log.info(f"Instantiating datamodule <{cfg.data._target_}>")
+    logger.pylogger.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
-    log.info(f"Instantiating model <{cfg.model._target_}>")
+    logger.pylogger.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
-    log.info("Instantiating callbacks...")
+    logger.pylogger.info("Instantiating callbacks...")
     callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
     callbacks.extend([ContinualCheckpoint()])
 
     # trainer for evaluation
-    log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
+    logger.pylogger.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(
         cfg.trainer, callbacks=callbacks, logger=lightning_loggers
     )
@@ -86,14 +86,14 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     }
 
     if lightning_loggers:
-        log.info("Logging hyperparameters!")
-        loggerpack.log_hyperparameters(object_dict=object_dict)
+        logger.pylogger.info("Logging hyperparameters!")
+        logger.log_hyperparameters(object_dict=object_dict)
 
     utils.continual_utils.set_test(
         model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path
     )
 
-    log.info("Starting testing!")
+    logger.pylogger.info("Starting testing!")
     trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
 
     # for predictions use trainer.predict(...)

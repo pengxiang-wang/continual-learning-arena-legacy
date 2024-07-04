@@ -8,11 +8,11 @@ from torch.utils.data import DataLoader, Dataset, random_split, ConcatDataset
 from torchvision.datasets import CIFAR100
 from torchvision.transforms import transforms
 
-from data import transforms as my_transforms
-from utils import pylogger, loggerpack
+from src.data import transforms as my_transforms
+from src.utils import logger, logger
 
-log = pylogger.get_pylogger(__name__)
-loggerpack = loggerpack.get_global_loggerpack()
+log = logger.get_pylogger(__name__)
+logger = logger.get_global_logger()
 
 NUM_CLASSES = 100
 INPUT_SIZE = (3, 32, 32)
@@ -63,7 +63,6 @@ class SplitCIFAR100(LightningDataModule):
         self.class_split = class_split
         self.joint = joint
 
-
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Dict[int, Optional[Dataset]] = {}
@@ -105,68 +104,68 @@ class SplitCIFAR100(LightningDataModule):
         one_hot_index = my_transforms.OneHotIndex(classes=self.classes(self.task_id))
 
         if stage == "fit":
-            data_train_full_before_split = (CIFAR100(
-                root=self.data_dir,
-                train=True,
-                transform=transforms.Compose(
-                    [
-                        transforms.RandomHorizontalFlip(p=0.5),
-                        transforms.RandomRotation(20),
-                        transforms.ColorJitter(
-                            brightness=0.1, contrast=0.1, saturation=0.1
-                        ),
-                        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
-                        transforms.ToTensor(),
-                        self.normalize_transform,
-                        transforms.RandomErasing(
-                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
-                        ),
-                    ]
-                ),
-                target_transform=one_hot_index,
-                download=False,
-            )
-            if not self.joint
+            data_train_full_before_split = (
+                CIFAR100(
+                    root=self.data_dir,
+                    train=True,
+                    transform=transforms.Compose(
+                        [
+                            transforms.RandomHorizontalFlip(p=0.5),
+                            transforms.RandomRotation(20),
+                            transforms.ColorJitter(
+                                brightness=0.1, contrast=0.1, saturation=0.1
+                            ),
+                            transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+                            transforms.ToTensor(),
+                            self.normalize_transform,
+                            transforms.RandomErasing(
+                                p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                            ),
+                        ]
+                    ),
+                    target_transform=one_hot_index,
+                    download=False,
+                )
+                if not self.joint
                 else TaskLabeledCIFAR100(
                     task_id=self.task_id,
                     root=self.data_dir,
                     train=True,
                     transform=transforms.Compose(
-                    [
-                        transforms.RandomHorizontalFlip(p=0.5),
-                        transforms.RandomRotation(20),
-                        transforms.ColorJitter(
-                            brightness=0.1, contrast=0.1, saturation=0.1
-                        ),
-                        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
-                        transforms.ToTensor(),
-                        self.normalize_transform,
-                        transforms.RandomErasing(
-                            p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
-                        ),
-                    ]
-                ),
+                        [
+                            transforms.RandomHorizontalFlip(p=0.5),
+                            transforms.RandomRotation(20),
+                            transforms.ColorJitter(
+                                brightness=0.1, contrast=0.1, saturation=0.1
+                            ),
+                            transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+                            transforms.ToTensor(),
+                            self.normalize_transform,
+                            transforms.RandomErasing(
+                                p=0.75, scale=(0.02, 0.1), value=1.0, inplace=False
+                            ),
+                        ]
+                    ),
                     target_transform=one_hot_index,
                     download=False,
-            ))
+                )
+            )
             data_train_before_split = self._get_class_subset(
                 data_train_full_before_split, classes=self.class_split[self.task_id]
             )
-
 
             data_train, data_val = random_split(
                 data_train_before_split,
                 lengths=[1 - self.hparams.val_pc, self.hparams.val_pc],
                 generator=torch.Generator().manual_seed(42),
             )
-            
+
             if (not self.joint) or self.task_id == 0:
                 self.data_train = data_train
                 self.data_val = data_val
             else:
                 self.data_train = ConcatDataset([self.data_train, data_train])
                 self.data_val = ConcatDataset([self.data_val, data_val])
-
 
         elif stage == "test":
             data_test = CIFAR100(
@@ -196,7 +195,7 @@ class SplitCIFAR100(LightningDataModule):
         Returns:
             nn.Dataset: subset of original dataset in classes.
         """
-        # Get from dataset.data and dataset.targets
+        # Get from src.dataset.data and dataset.targets
         idx = np.array(dataset.targets) == classes[0]
 
         for cls in classes[1:]:
@@ -239,6 +238,7 @@ class SplitCIFAR100(LightningDataModule):
             )
             for task_id, data_test in self.data_test.items()
         }
+
 
 class TaskLabeledCIFAR100(CIFAR100):
     def __init__(
