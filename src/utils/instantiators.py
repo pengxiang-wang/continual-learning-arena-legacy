@@ -9,8 +9,10 @@ from omegaconf import DictConfig
 
 # import our own modules
 # because of the setup_root in train.py and so on, we can import from src without any problems
-from src.utils.logger_wrapper import get_logger
+from src.utils import get_logger
+
 logger = get_logger()
+
 
 def instantiate_callbacks(callbacks_cfg: DictConfig) -> List[Callback]:
     """Instantiates callbacks from config."""

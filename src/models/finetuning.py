@@ -7,6 +7,7 @@ from lightning import LightningModule
 # import our own modules
 # because of the setup_root in train.py and so on, we can import from src without any problems
 from src.utils import get_logger
+
 logger = get_logger()
 
 

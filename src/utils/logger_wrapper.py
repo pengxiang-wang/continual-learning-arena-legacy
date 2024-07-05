@@ -31,21 +31,23 @@ class Logger:
         logger_cfg: DictConfig,
         log_dir: str,
     ):
-        self.pylogger = self.instantiate_pylogger(
-            logger_cfg.pylogger
-        )  # python logger object
-        self.lightning_loggers = self.instantiate_lightning_loggers(
-            logger_cfg.get("lightning_loggers")
-        )  # Lightning loggers
-        self.log_dir = log_dir  # some might need it
+        # python logger object
+        self.pylogger = self.instantiate_pylogger(logger_cfg.pylogger)
+
+        # Lightning loggers
+        del logger_cfg.pylogger
+        self.lightning_loggers = self.instantiate_lightning_loggers(logger_cfg)
+        self.log_dir = log_dir  # some logging functions might need it
 
     def instantiate_pylogger(self, pylogger_logger_cfg: DictConfig) -> logging.Logger:
         r"""Initializes multi-GPU-friendly python command line logger."""
 
         pylogger = logging.getLogger(__name__)
-        pylog_path = os.path.join(pylogger_logger_cfg.log_dir, pylogger_logger_cfg.filename)
+        pylogger.setLevel(pylogger_logger_cfg.level)
+        pylog_path = os.path.join(
+            pylogger_logger_cfg.log_dir, pylogger_logger_cfg.filename
+        )
         file_handler = logging.FileHandler(pylog_path)
-        file_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(fmt=pylogger_logger_cfg.fmt)
         file_handler.setFormatter(formatter)
         pylogger.addHandler(file_handler)
@@ -82,7 +84,7 @@ class Logger:
 
         for _, lg_conf in lightning_logger_cfg.items():
             if isinstance(lg_conf, DictConfig) and "_target_" in lg_conf:
-                self.pylogger.info(f"Instantiating logger <{lg_conf._target_}>")
+                self.pylogger.debug(f"Instantiating logger <{lg_conf._target_}>")
                 lightning_loggers.append(hydra.utils.instantiate(lg_conf))
 
         return lightning_loggers
@@ -398,11 +400,15 @@ class Logger:
     # make logger available across all modules. There must be only one logger instance.
     # after globalising, use `utils.get_global_logger()` in other modules.
 
+
 logger = None
+
+
 def set_logger_global(logger_local: Logger):
     """Set the globalised logger."""
     global logger
     logger = logger_local
+
 
 def get_logger():
     """Get the globalised logger."""

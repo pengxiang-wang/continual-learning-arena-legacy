@@ -11,10 +11,9 @@ pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 from src.models import Finetuning
 from src.models.calibrators import weightmaskclipper
 from src.models.memories import WeightMaskMemory
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 
 class PackNet(Finetuning):

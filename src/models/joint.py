@@ -4,10 +4,9 @@ import torch
 from torch import nn
 
 from src.models import Finetuning
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 
 class Joint(Finetuning):

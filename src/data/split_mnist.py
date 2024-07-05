@@ -7,10 +7,9 @@ from torchvision.datasets import MNIST as OrigDataset
 from torchvision.transforms import transforms
 
 from src.data import transforms as my_transforms
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (1, 28, 28)

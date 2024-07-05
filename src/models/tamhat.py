@@ -12,10 +12,9 @@ from src.models import HAT
 from src.models.calibrators import maskclipper
 from src.models.memories import MaskMemory
 from src.models.regs import TrapsNMineReg
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 
 DEFAULT_SMAX = 400.0

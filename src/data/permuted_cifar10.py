@@ -7,10 +7,9 @@ from torchvision.datasets import CIFAR10
 from torchvision.transforms import transforms
 
 import data.transforms as my_transforms
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (3, 32, 32)

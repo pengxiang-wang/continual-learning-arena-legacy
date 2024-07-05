@@ -6,10 +6,9 @@ from lightning import LightningModule
 
 
 from src.models.memories import LabelMemory
-from src.utils import logger, logger
+from src.utils import get_logger
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+logger = get_logger()
 
 
 class Random(LightningModule):

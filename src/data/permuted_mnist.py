@@ -12,10 +12,12 @@ import pyrootutils
 pyrootutils.setup_root(__file__, indicator="pyproject.toml", pythonpath=True)
 
 import data.transforms as my_transforms
-from src.utils import logger, logger, task_labeled
 
-log = logger.get_pylogger(__name__)
-logger = logger.get_global_logger()
+# import our own modules
+# because of the setup_root in train.py and so on, we can import from src without any problems
+from src.utils import get_logger
+
+logger = get_logger()
 
 NUM_CLASSES = 10
 INPUT_SIZE = (1, 28, 28)
@@ -212,5 +214,5 @@ class TaskLabeledMNIST(MNIST):
 
 if __name__ == "__main__":
     _ = PermutedMNIST()
-    A = OrigDatasetTaskLabeled("/data", train=False, download=False, task_id=1)
-    print(A[1])
+    # A = OrigDatasetTaskLabeled("/data", train=False, download=False, task_id=1)
+    # print(A[1])
